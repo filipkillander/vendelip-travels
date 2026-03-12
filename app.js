@@ -31,7 +31,7 @@ const trips = [
     },
     options: [
       {
-        tier: "Budget",
+        tier: "Prisvärt",
         hotel: "Hotel Gotico",
         room: "Dubbel- eller tvåbäddsrum · ej återbetalningsbar",
         transportHotelSek: 9971,
@@ -86,7 +86,7 @@ const trips = [
         flex: "Fri avbokning till 27 april 2026",
         taxNote: "Stadsskatt på 6,27 EUR per person och natt tillkommer på hotellsidan.",
         note:
-          "Det här är Barcelona-valet som bäst matchar er brief när boutique-känsla väger tyngre än att pressa sista kronan. Du får mer hotellromantik och ett tydligare vuxet uttryck än budgetkortet.",
+          "Det här är Barcelona-valet som bäst matchar er brief när boutique-känsla väger tyngre än att pressa sista kronan. Du får mer hotellromantik och ett tydligare vuxet uttryck än det prisvärda kortet.",
         links: [
           {
             label: "Flygrutt",
@@ -117,7 +117,7 @@ const trips = [
         ],
       },
       {
-        tier: "Utökad",
+        tier: "Utökat",
         hotel: "Duquesa de Cardona",
         room: "Deluxe dubbelrum inkl. frukost · fri avbokning",
         transportHotelSek: 14653,
@@ -172,7 +172,7 @@ const trips = [
     baggage:
       "Jag har lagt på 1 200 kr för bagage och tillägg, eftersom Paris gärna ser billigt ut i första sökningen men mindre förlåtande ut när extras börjar komma på.",
     caveat:
-      "Paris är shortlistans tydligaste hjärta-före-budget-val. Det är inte flyget som fäller kalkylen, utan hotellpriserna i de kvarter ni faktiskt vill bo i.",
+      "Paris är shortlistans tydligaste hjärta-före-pris-val. Det är inte flyget som fäller kalkylen, utan hotellpriserna i de kvarter ni faktiskt vill bo i.",
     visuals: {
       city: {
         label: "Stadskänsla",
@@ -193,7 +193,7 @@ const trips = [
     },
     options: [
       {
-        tier: "Budget",
+        tier: "Prisvärt",
         hotel: "Dauphine Saint Germain",
         room: "Dubbelrum · ej återbetalningsbar",
         transportHotelSek: 13104,
@@ -205,7 +205,7 @@ const trips = [
         flex: "Ej återbetalningsbar",
         taxNote: "Stadsskatt på 5,53 EUR per person och natt tillkommer på hotellsidan.",
         note:
-          "Det här är billigaste Paris-adressen som fortfarande känns som vänsterbanken och inte som ett avkall på hela resans idé. Men Paris är dyrt exakt de här nätterna, så även budgetkortet hamnar klart över er ursprungsram.",
+          "Det här är billigaste Paris-adressen som fortfarande känns som vänsterbanken och inte som ett avkall på hela resans idé. Men Paris är dyrt exakt de här nätterna, så även det prisvärda kortet hamnar klart över er ursprungsram.",
         links: [
           {
             label: "Flygrutt",
@@ -279,7 +279,7 @@ const trips = [
         ],
       },
       {
-        tier: "Utökad",
+        tier: "Utökat",
         hotel: "Hotel Du Quai Voltaire",
         room: "Classic room med flodutsikt · fri avbokning",
         transportHotelSek: 15951,
@@ -291,7 +291,7 @@ const trips = [
         flex: "Fri avbokning till 26 april 2026",
         taxNote: "Stadsskatt på 8,45 EUR per person och natt tillkommer på hotellsidan.",
         note:
-          "När Paris får vara mer romantisk än rationell är det här uppgraderingen jag hade tittat på. Flodutsikten gör något med hela resans ton, även om prislappen tydligt lämnar budgetspåret.",
+          "När Paris får vara mer romantisk än rationell är det här uppgraderingen jag hade tittat på. Flodutsikten gör något med hela resans ton, även om prislappen tydligt lämnar det mer prisdrivna spåret.",
         links: [
           {
             label: "Flygrutt",
@@ -355,7 +355,7 @@ const trips = [
     },
     options: [
       {
-        tier: "Budget",
+        tier: "Prisvärt",
         hotel: "Leonardo Boutique Hotel Rome Monti",
         room: "Comfort Double Room · ej återbetalningsbar",
         transportHotelSek: 13926,
@@ -367,7 +367,7 @@ const trips = [
         flex: "Ej återbetalningsbar",
         taxNote: "Stadsskatt på 7,50 EUR per person och natt tillkommer på hotellsidan.",
         note:
-          "Det här är den mest rationella ingången till Rom just nu, men Rom är betydligt dyrare på exakt hotellnivå än vad den tidigare översikten antydde. Det här kortet är därför mer ett lägsta rimligt Rom än ett egentligt budgetfynd.",
+          "Det här är den mest rationella ingången till Rom just nu, men Rom är betydligt dyrare på exakt hotellnivå än vad den tidigare översikten antydde. Det här kortet är därför mer ett lägsta rimligt Rom än ett egentligt prisfynd.",
         links: [
           {
             label: "Flygrutt",
@@ -410,7 +410,7 @@ const trips = [
         flex: "Fri avbokning till 26 april 2026",
         taxNote: "Stadsskatt på 7,50 EUR per person och natt tillkommer på hotellsidan.",
         note:
-          "Det här är det mest bokningsvänliga Monti-kortet eftersom ni får frukost och fri avbokning utan att byta kvarter. Prismässigt är det dock tydligt ett hjärta-före-budget-val.",
+          "Det här är det mest bokningsvänliga Monti-kortet eftersom ni får frukost och fri avbokning utan att byta kvarter. Prismässigt är det dock tydligt ett hjärta-före-pris-val.",
         links: [
           {
             label: "Flygrutt",
@@ -441,7 +441,7 @@ const trips = [
         ],
       },
       {
-        tier: "Utökad",
+        tier: "Utökat",
         hotel: "Hotel Santa Maria",
         room: "Dubbelrum inkl. frukost · delvis återbetalningsbar",
         transportHotelSek: 16049,
@@ -515,7 +515,7 @@ const trips = [
     },
     options: [
       {
-        tier: "Budget",
+        tier: "Prisvärt",
         hotel: "Hotel Porta San Mamolo",
         room: "Dubbel- eller tvåbäddsrum inkl. frukost · ej återbetalningsbar",
         transportHotelSek: 9696,
@@ -601,7 +601,7 @@ const trips = [
         ],
       },
       {
-        tier: "Utökad",
+        tier: "Utökat",
         hotel: "Hotel Porta San Mamolo",
         room: "Deluxe-lägenhet med kaffemaskin · ej återbetalningsbar",
         transportHotelSek: 11299,
@@ -715,7 +715,7 @@ const compareProfiles = {
 };
 
 const lastCheckedLabel = "12 mars 2026";
-const favoritesStorageKey = "varresa-favoriter-v1";
+const favoritesStorageKey = "varresa-favoriter-v2";
 const budgetGoalSek = 10000;
 const stretchGoalSek = 12000;
 const budgetMeterCapSek = 16000;
@@ -734,6 +734,41 @@ const formatSek = (value) =>
     currency: "SEK",
     maximumFractionDigits: 0,
   }).format(value);
+
+const iconSvg = {
+  plane:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.5 22 12 2 7.5l5 4.5-5 4.5Z"/></svg>',
+  hotel:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V7h16v12"/><path d="M4 13h16"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M4 19h16"/></svg>',
+  bag:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/><path d="M10 12v3"/><path d="M14 12v3"/></svg>',
+  car:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16 7 9h10l2 7"/><path d="M3 16h18"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>',
+  wallet:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H19v14H5.5A2.5 2.5 0 0 1 3 16.5Z"/><path d="M19 9h2v6h-2"/><path d="M16 12h.01"/></svg>',
+  total:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8.5 7.5h5a2.5 2.5 0 0 1 0 5h-3a2.5 2.5 0 0 0 0 5h5"/></svg>',
+  map:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>',
+  swipe:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="M8 12h8"/></svg>',
+  link:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5"/><path d="M14 11a5 5 0 0 0-7.07 0L5.5 12.41a5 5 0 0 0 7.07 7.07L14 19"/></svg>',
+  heart:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 10c0 5.65-7 10-7 10Z"/></svg>',
+};
+
+const icon = (name) =>
+  `<span class="icon-inline icon-${name}" aria-hidden="true">${iconSvg[name] ?? iconSvg.link}</span>`;
+
+const iconText = (name, text) => `<span class="icon-label">${icon(name)}<span>${text}</span></span>`;
+
+const linkIconName = (label) => {
+  if (label.includes("Flyg")) return "plane";
+  if (label.includes("Hotell")) return "hotel";
+  if (label.includes("Maps")) return "map";
+  return "link";
+};
 
 const getBudgetState = (amount) => {
   if (amount <= budgetGoalSek) {
@@ -799,8 +834,8 @@ const defaultSortByMode = {
 const mobileDefaultTierByCity = {
   Barcelona: "Mitt i prick",
   Paris: "Mitt i prick",
-  Rom: "Budget",
-  Bologna: "Budget",
+  Rom: "Prisvärt",
+  Bologna: "Prisvärt",
 };
 
 const loadFavorites = () => {
@@ -833,21 +868,21 @@ const decisionPicks = [
   {
     label: "Smidigast inom 10k",
     city: "Barcelona",
-    tier: "Budget",
+    tier: "Prisvärt",
     reason:
       "Det tryggaste sättet att hålla er transportram utan att ge upp gamla kvarter, kvällspuls och enkel flyglogik.",
   },
   {
     label: "Mest känsla per krona",
     city: "Bologna",
-    tier: "Budget",
+    tier: "Prisvärt",
     reason:
       "Det mest romantiska under 10k om ni prioriterar stadskänsla och hotellcharm högre än den smidigaste flygdagen.",
   },
   {
     label: "Bästa boutique-stretch",
     city: "Bologna",
-    tier: "Utökad",
+    tier: "Utökat",
     reason:
       "Det tydligaste vuxenvalet inom er stretch: mer hotellkänsla, kaffemaskin och fortfarande under 12k för transport + hotell.",
   },
@@ -902,19 +937,43 @@ const applyHashToState = (hash) => {
     return true;
   }
 
-  return false;
+  return Boolean(document.getElementById?.(targetId));
 };
 
 const scrollToHashTarget = (hash) => {
   const targetId = hash.replace(/^#/, "");
-  const target = document.getElementById?.(targetId);
+  const performScroll = () => {
+    const target = document.getElementById?.(targetId);
 
-  if (target) {
-    target.scrollIntoView({
+    if (!target) {
+      return false;
+    }
+
+    const offset = window.matchMedia?.("(max-width: 720px)")?.matches ? 86 : 28;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - offset;
+
+    window.scrollTo({
+      top: Math.max(0, targetTop),
       behavior: "smooth",
-      block: "start",
     });
+
+    return true;
+  };
+
+  if (!performScroll()) {
+    window.setTimeout?.(performScroll, 48);
   }
+};
+
+const scheduleHashScroll = (hash) => {
+  const run = () => scrollToHashTarget(hash);
+
+  if (window.requestAnimationFrame) {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(run));
+    return;
+  }
+
+  window.setTimeout?.(run, 0);
 };
 
 const saveFavorites = () => {
@@ -926,7 +985,7 @@ const saveFavorites = () => {
 };
 
 const compareSorters = {
-  flightPrice: (trip) => getTierOption(trip, "Budget").flightSek,
+  flightPrice: (trip) => getTierOption(trip, "Prisvärt").flightSek,
   midPackage: (trip) => getTierOption(trip, "Mitt i prick").transportHotelSek,
   ease: (trip) => -compareProfiles[trip.city].flight.easeScore,
   romance: (trip) => -compareProfiles[trip.city].country.romanceScore,
@@ -956,17 +1015,17 @@ const renderCompareSummary = () => {
   return `
     <div class="compare-summary">
       <article class="compare-summary-card">
-        <span>Billigast flyg</span>
+        <span>${iconText("plane", "Billigast flyg")}</span>
         <strong>${cheapestFlight.city}</strong>
-        <p>${formatSek(getTierOption(cheapestFlight, "Budget").flightSek)} för två</p>
+        <p>${formatSek(getTierOption(cheapestFlight, "Prisvärt").flightSek)} för två</p>
       </article>
       <article class="compare-summary-card">
-        <span>Billigast mitt i prick</span>
+        <span>${iconText("wallet", "Billigast mitt i prick")}</span>
         <strong>${cheapestMid.city}</strong>
         <p>${formatSek(getTierOption(cheapestMid, "Mitt i prick").transportHotelSek)} transport + hotell</p>
       </article>
       <article class="compare-summary-card">
-        <span>Mest romantik</span>
+        <span>${iconText("heart", "Mest romantik")}</span>
         <strong>${mostRomantic.city}</strong>
         <p>${compareProfiles[mostRomantic.city].country.bestFor}</p>
       </article>
@@ -989,11 +1048,12 @@ const renderDecisionSection = () => {
           </p>
         </div>
         <div class="method-meta">
-          <span>Appnamn: Vendelip Travels</span>
           <span>Kuraterad för Filip + Vendela</span>
+          <span>Priser dubbelkollade ${lastCheckedLabel}</span>
         </div>
       </div>
 
+      ${renderSwipeHint("Svep sidledes för fler slutval")}
       <div class="decision-grid">
         ${decisionPicks
           .map((pick) => {
@@ -1012,24 +1072,24 @@ const renderDecisionSection = () => {
                 <div class="decision-price-row">
                   <div class="decision-meta">
                     <strong>${formatSek(option.transportHotelSek)}</strong>
-                    <span>transport + hotell</span>
+                    <span>${iconText("wallet", "Transport + hotell")}</span>
                   </div>
                   <div class="decision-meta">
                     <strong>${formatSek(option.tripTotalSek)}</strong>
-                    <span>total resa inkl. 6 000 kr på plats</span>
+                    <span>${iconText("total", "Total resa inkl. 6 000 kr på plats")}</span>
                   </div>
                 </div>
                 <div class="decision-metrics">
                   <div class="metric-box">
-                    <span>Flyg idag</span>
+                    <span>${iconText("plane", "Flyg idag")}</span>
                     <strong>${formatSek(option.flightSek)}</strong>
                   </div>
                   <div class="metric-box">
-                    <span>Bagage</span>
+                    <span>${iconText("bag", "Bagage")}</span>
                     <strong>${formatSek(option.baggageSek)}</strong>
                   </div>
                   <div class="metric-box">
-                    <span>Flygläge</span>
+                    <span>${iconText("map", "Flygläge")}</span>
                     <strong>${profile.flight.easeScore}/5</strong>
                   </div>
                 </div>
@@ -1059,6 +1119,10 @@ const renderMobileQuickNav = () => `
   </nav>
 `;
 
+const renderSwipeHint = (text) => `
+  <p class="swipe-hint">${icon("swipe")}<span>${text}</span></p>
+`;
+
 const renderMethodSection = () => {
   const closestBudget = getLowestTransportOption();
 
@@ -1082,22 +1146,22 @@ const renderMethodSection = () => {
 
       <div class="method-grid">
         <article class="method-card">
-          <span>Hotell</span>
+          <span>${iconText("hotel", "Hotell")}</span>
           <strong>Exakt datumsida</strong>
           <p>Alla hotellkort bygger nu på 28 april till 1 maj 2026, 2 vuxna och 1 rum.</p>
         </article>
         <article class="method-card">
-          <span>Flyg</span>
+          <span>${iconText("plane", "Flyg")}</span>
           <strong>Ruttsnapshot samma dag</strong>
           <p>Flygdelen är billigaste rimliga ruttsignal från dagens flygsidor, medan bagaget läggs separat.</p>
         </article>
         <article class="method-card">
-          <span>Totalen</span>
+          <span>${iconText("wallet", "Totalen")}</span>
           <strong>Transport + hotell först</strong>
           <p>Kortens huvudsumma är hotell + flyg + bagage + bil/parkering. Sedan visas total resa med ert antagna spend på 6 000 kr.</p>
         </article>
         <article class="method-card">
-          <span>Brasklapp</span>
+          <span>${iconText("link", "Brasklapp")}</span>
           <strong>Lokala skatter kan tillkomma</strong>
           <p>Flera hotellsidor visar stadsskatt eller moms utanför priset. Det står i varje kort så att ni ser var risken finns.</p>
         </article>
@@ -1178,6 +1242,7 @@ const renderFavoritesSection = () => {
       ${
         favorites.length
           ? `
+            ${renderSwipeHint("Svep sidledes mellan era pinnade favoriter")}
             <div class="favorites-grid">
               ${favorites
                 .map(({ trip, option }) => {
@@ -1203,19 +1268,19 @@ const renderFavoritesSection = () => {
                       <p class="favorite-hotel">${option.hotel}</p>
                       <div class="favorite-prices">
                         <div class="metric-box">
-                          <span>Transport + hotell</span>
+                          <span>${iconText("wallet", "Transport + hotell")}</span>
                           <strong>${formatSek(option.transportHotelSek)}</strong>
                         </div>
                         <div class="metric-box">
-                          <span>Total resa</span>
+                          <span>${iconText("total", "Total resa")}</span>
                           <strong>${formatSek(option.tripTotalSek)}</strong>
                         </div>
                       </div>
                       <p>${option.note}</p>
                       <div class="favorite-links">
-                        <a href="#${optionId}">Till kortet</a>
-                        <a href="${option.links[1].url}" target="_blank" rel="noreferrer">Hotell</a>
-                        <a href="${option.links[2].url}" target="_blank" rel="noreferrer">Google Maps</a>
+                        <a href="#${optionId}">${icon("link")}<span>Till kortet</span></a>
+                        <a href="${option.links[1].url}" target="_blank" rel="noreferrer">${icon("hotel")}<span>Hotell</span></a>
+                        <a href="${option.links[2].url}" target="_blank" rel="noreferrer">${icon("map")}<span>Google Maps</span></a>
                       </div>
                     </article>
                   `;
@@ -1238,7 +1303,7 @@ const renderFavoritesSection = () => {
 };
 
 const renderCompareCard = (trip, index) => {
-  const budgetOption = getTierOption(trip, "Budget");
+  const budgetOption = getTierOption(trip, "Prisvärt");
   const midOption = getTierOption(trip, "Mitt i prick");
   const profile = compareProfiles[trip.city];
 
@@ -1259,15 +1324,15 @@ const renderCompareCard = (trip, index) => {
 
         <div class="compare-metrics">
           <div class="metric-box">
-            <span>Mitt i prick</span>
+            <span>${iconText("wallet", "Mitt i prick")}</span>
             <strong>${formatSek(midOption.transportHotelSek)}</strong>
           </div>
           <div class="metric-box">
-            <span>Bagage</span>
+            <span>${iconText("bag", "Bagage")}</span>
             <strong>${formatSek(budgetOption.baggageSek)}</strong>
           </div>
           <div class="metric-box">
-            <span>Smidighet</span>
+            <span>${iconText("map", "Smidighet")}</span>
             <strong>${profile.flight.easeScore}/5</strong>
           </div>
         </div>
@@ -1361,6 +1426,7 @@ const renderCompareSection = () => {
         </div>
       </div>
 
+      ${renderSwipeHint("Svep i korten för fler jämförelser")}
       ${renderCompareSummary()}
       ${renderGuideStrip()}
 
@@ -1420,11 +1486,11 @@ const renderOptionCard = (trip, option, selectedTier) => {
 
       <div class="price-grid">
         <div class="price-box">
-          <span>Transport + hotell</span>
+          <span>${iconText("wallet", "Transport + hotell")}</span>
           <strong>${formatSek(option.transportHotelSek)}</strong>
         </div>
         <div class="price-box">
-          <span>Total inkl. 6 000 kr på plats</span>
+          <span>${iconText("total", "Total inkl. 6 000 kr på plats")}</span>
           <strong>${formatSek(option.tripTotalSek)}</strong>
         </div>
       </div>
@@ -1432,10 +1498,10 @@ const renderOptionCard = (trip, option, selectedTier) => {
       ${renderBudgetMeter(option.transportHotelSek)}
 
       <ul class="breakdown">
-        <li><span>Hotellpris från datumsida</span><strong>${formatSek(option.hotelSek)}</strong></li>
-        <li><span>Flygrutt idag</span><strong>${formatSek(option.flightSek)}</strong></li>
-        <li><span>Bagageestimat</span><strong>${formatSek(option.baggageSek)}</strong></li>
-        <li><span>Bil + Arlanda</span><strong>${formatSek(option.driveParkingSek)}</strong></li>
+        <li><span>${iconText("hotel", "Hotellpris från datumsida")}</span><strong>${formatSek(option.hotelSek)}</strong></li>
+        <li><span>${iconText("plane", "Flygrutt idag")}</span><strong>${formatSek(option.flightSek)}</strong></li>
+        <li><span>${iconText("bag", "Bagageestimat")}</span><strong>${formatSek(option.baggageSek)}</strong></li>
+        <li><span>${iconText("car", "Bil + Arlanda")}</span><strong>${formatSek(option.driveParkingSek)}</strong></li>
       </ul>
 
       <p>${option.note}</p>
@@ -1448,7 +1514,7 @@ const renderOptionCard = (trip, option, selectedTier) => {
         ${option.links
           .map(
             (link) =>
-              `<a href="${link.url}" target="_blank" rel="noreferrer">${link.label}</a>`
+              `<a href="${link.url}" target="_blank" rel="noreferrer">${icon(linkIconName(link.label))}<span>${link.label}</span></a>`
           )
           .join("")}
       </div>
@@ -1530,6 +1596,7 @@ const renderTrips = () =>
                 </aside>
               </div>
 
+              ${renderSwipeHint("Svep i bilderna och växla mellan nivåerna")}
               ${renderMobileTierTabs(trip, selectedOption.tier)}
 
               <div class="options-grid">
@@ -1603,12 +1670,10 @@ const bindCompareControls = () => {
 
       const shouldRerender = applyHashToState(hash);
 
-      if (!shouldRerender) {
-        return;
-      }
-
       event.preventDefault();
-      render();
+      if (shouldRerender) {
+        render();
+      }
 
       if (window.history?.replaceState) {
         window.history.replaceState(null, "", hash);
@@ -1616,7 +1681,7 @@ const bindCompareControls = () => {
         window.location.hash = hash;
       }
 
-      window.requestAnimationFrame?.(() => scrollToHashTarget(hash));
+      scheduleHashScroll(hash);
     });
   });
 };
@@ -1631,5 +1696,5 @@ applyHashToState(initialHash);
 render();
 
 if (initialHash) {
-  window.requestAnimationFrame?.(() => scrollToHashTarget(initialHash));
+  scheduleHashScroll(initialHash);
 }
