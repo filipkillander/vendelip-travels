@@ -796,6 +796,13 @@ const defaultSortByMode = {
   country: "romance",
 };
 
+const mobileDefaultTierByCity = {
+  Barcelona: "Mitt i prick",
+  Paris: "Mitt i prick",
+  Rom: "Budget",
+  Bologna: "Budget",
+};
+
 const loadFavorites = () => {
   try {
     const saved = window.localStorage.getItem(favoritesStorageKey);
@@ -810,6 +817,8 @@ const state = {
   mode: "flight",
   sort: defaultSortByMode.flight,
   favorites: loadFavorites(),
+  openCities: [trips[0].city],
+  mobileTierByCity: { ...mobileDefaultTierByCity },
 };
 
 const decisionPicks = [
@@ -846,6 +855,8 @@ const decisionPicks = [
 
 const getTierOption = (trip, tier) => trip.options.find((option) => option.tier === tier);
 
+const makeCityId = (trip) => slugify(trip.city);
+
 const makeOptionId = (trip, option) => `${slugify(trip.city)}--${slugify(option.tier)}`;
 
 const getLowestTransportOption = () =>
@@ -863,6 +874,47 @@ const findOptionById = (optionId) => {
   }
 
   return null;
+};
+
+const setOpenCity = (city) => {
+  state.openCities = city ? [city] : [];
+};
+
+const applyHashToState = (hash) => {
+  const targetId = hash.replace(/^#/, "");
+
+  if (!targetId) {
+    return false;
+  }
+
+  const optionMatch = findOptionById(targetId);
+
+  if (optionMatch) {
+    setOpenCity(optionMatch.trip.city);
+    state.mobileTierByCity[optionMatch.trip.city] = optionMatch.option.tier;
+    return true;
+  }
+
+  const cityMatch = trips.find((trip) => makeCityId(trip) === targetId);
+
+  if (cityMatch) {
+    setOpenCity(cityMatch.city);
+    return true;
+  }
+
+  return false;
+};
+
+const scrollToHashTarget = (hash) => {
+  const targetId = hash.replace(/^#/, "");
+  const target = document.getElementById?.(targetId);
+
+  if (target) {
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 };
 
 const saveFavorites = () => {
@@ -994,6 +1046,19 @@ const renderDecisionSection = () => {
   `;
 };
 
+const renderMobileQuickNav = () => `
+  <nav class="mobile-quicknav" aria-label="Snabbnavigering för mobil">
+    <div class="mobile-quicknav-track">
+      <a href="#slutval">Slutval</a>
+      <a href="#favoriter">Favoriter</a>
+      <a href="#jamfor">Jämför</a>
+      ${trips
+        .map((trip) => `<a href="#${makeCityId(trip)}">${trip.city}</a>`)
+        .join("")}
+    </div>
+  </nav>
+`;
+
 const renderMethodSection = () => {
   const closestBudget = getLowestTransportOption();
 
@@ -1044,6 +1109,7 @@ const renderMethodSection = () => {
 const renderGuideStrip = () => {
   const smoothest = sortTripsForCompare("ease")[0];
   const bestValue = getLowestTransportOption();
+  const bestBalanced = trips.find((trip) => trip.city === "Barcelona");
 
   return `
     <div class="guide-strip">
@@ -1059,8 +1125,8 @@ const renderGuideStrip = () => {
       </article>
       <article class="guide-card">
         <span>Bästa kombon av känsla och rimlighet</span>
-        <strong>Bologna mitt i prick</strong>
-        <p>Det är fortfarande kortet som bäst blandar romantik, boutiquekänsla och en prislapp som inte tappar fotfästet helt.</p>
+        <strong>${bestBalanced.city} mitt i prick</strong>
+        <p>${formatSek(getTierOption(bestBalanced, "Mitt i prick").transportHotelSek)} för transport + hotell, med betydligt smidigare flyglogik än Bologna.</p>
       </article>
     </div>
   `;
@@ -1305,123 +1371,176 @@ const renderCompareSection = () => {
   `;
 };
 
+const renderMobileTierTabs = (trip, selectedTier) => `
+  <div class="mobile-tier-tabs" role="tablist" aria-label="${trip.city} prisnivåer">
+    ${trip.options
+      .map(
+        (option) => `
+          <button
+            class="toggle-btn subtle mobile-tier-btn ${selectedTier === option.tier ? "active" : ""}"
+            type="button"
+            data-mobile-city="${trip.city}"
+            data-mobile-tier="${option.tier}"
+            aria-pressed="${selectedTier === option.tier}"
+          >
+            ${option.tier}
+          </button>
+        `
+      )
+      .join("")}
+  </div>
+`;
+
+const renderOptionCard = (trip, option, selectedTier) => {
+  const optionId = makeOptionId(trip, option);
+  const budgetState = getBudgetState(option.transportHotelSek);
+
+  return `
+    <article class="option-card ${selectedTier === option.tier ? "is-mobile-active" : ""}" id="${optionId}">
+      <div class="option-top">
+        <div class="option-badges">
+          <span class="tier">${option.tier}</span>
+          <span class="status ${budgetState.className}">${budgetState.label}</span>
+        </div>
+        <button
+          class="favorite-btn ${state.favorites.includes(optionId) ? "active" : ""}"
+          type="button"
+          data-favorite-id="${optionId}"
+          aria-pressed="${state.favorites.includes(optionId)}"
+        >
+          ${state.favorites.includes(optionId) ? "Pinnad" : "Pinna"}
+        </button>
+      </div>
+      <div>
+        <h3>${option.hotel}</h3>
+        <div class="meta-line">
+          <span>${option.room}</span>
+        </div>
+      </div>
+
+      <div class="price-grid">
+        <div class="price-box">
+          <span>Transport + hotell</span>
+          <strong>${formatSek(option.transportHotelSek)}</strong>
+        </div>
+        <div class="price-box">
+          <span>Total inkl. 6 000 kr på plats</span>
+          <strong>${formatSek(option.tripTotalSek)}</strong>
+        </div>
+      </div>
+
+      ${renderBudgetMeter(option.transportHotelSek)}
+
+      <ul class="breakdown">
+        <li><span>Hotellpris från datumsida</span><strong>${formatSek(option.hotelSek)}</strong></li>
+        <li><span>Flygrutt idag</span><strong>${formatSek(option.flightSek)}</strong></li>
+        <li><span>Bagageestimat</span><strong>${formatSek(option.baggageSek)}</strong></li>
+        <li><span>Bil + Arlanda</span><strong>${formatSek(option.driveParkingSek)}</strong></li>
+      </ul>
+
+      <p>${option.note}</p>
+      <div class="fine-print">
+        <span>${option.flex}</span>
+        <span>${option.taxNote}</span>
+      </div>
+
+      <div class="links">
+        ${option.links
+          .map(
+            (link) =>
+              `<a href="${link.url}" target="_blank" rel="noreferrer">${link.label}</a>`
+          )
+          .join("")}
+      </div>
+
+      <div class="sources">
+        <span>Källor</span>
+        ${option.sources
+          .map(
+            (source) =>
+              `<a href="${source.url}" target="_blank" rel="noreferrer">${source.label}</a>`
+          )
+          .join("")}
+      </div>
+    </article>
+  `;
+};
+
 const renderTrips = () =>
   trips
     .map(
-      (trip) => `
-        <section class="city-section ${trip.themeClass}">
-          <div class="city-header">
-            <article class="city-copy">
-              <div class="city-kicker">
-                <span class="chip">${trip.country}</span>
-                <span class="chip">${trip.dates}</span>
-              </div>
-              <h2>${trip.city}</h2>
-              <p>${trip.fit}</p>
-              <div class="city-notes">
-                <div class="note"><strong>Tider:</strong> <span>${trip.timing}</span></div>
-                <div class="note"><strong>Bagagelogik:</strong> <span>${trip.baggage}</span></div>
-                <div class="note"><strong>Brasklapp:</strong> <span>${trip.caveat}</span></div>
-              </div>
-            </article>
-            <aside class="city-visuals">
-              <a class="visual-card" href="${trip.visuals.city.source}" target="_blank" rel="noreferrer">
-                <img src="${trip.visuals.city.image}" alt="${trip.city}" loading="lazy" />
-                <div class="visual-label">
-                  <span>${trip.visuals.city.label}</span>
-                  <strong>${trip.visuals.city.title}</strong>
+      (trip) => {
+        const selectedTier = state.mobileTierByCity[trip.city] ?? trip.options[1]?.tier ?? trip.options[0].tier;
+        const selectedOption = getTierOption(trip, selectedTier) ?? trip.options[0];
+        const isOpen = state.openCities.includes(trip.city);
+        const budgetState = getBudgetState(selectedOption.transportHotelSek);
+        const profile = compareProfiles[trip.city];
+
+        return `
+          <section class="city-section ${trip.themeClass}" id="${makeCityId(trip)}">
+            <div class="city-mobile-summary">
+              <button
+                class="city-mobile-toggle"
+                type="button"
+                data-city-toggle="${trip.city}"
+                aria-expanded="${isOpen}"
+              >
+                <div class="city-mobile-copy">
+                  <span>${trip.country}</span>
+                  <strong>${trip.city}</strong>
+                  <p>${selectedOption.tier} · ${formatSek(selectedOption.transportHotelSek)} · flyg ${profile.flight.easeScore}/5</p>
                 </div>
-              </a>
-              <a class="visual-card" href="${trip.visuals.area.source}" target="_blank" rel="noreferrer">
-                <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" loading="lazy" />
-                <div class="visual-label">
-                  <span>${trip.visuals.area.label}</span>
-                  <strong>${trip.visuals.area.title}</strong>
+                <div class="city-mobile-side">
+                  <span class="status ${budgetState.className}">${budgetState.label}</span>
+                  <span class="city-mobile-arrow">${isOpen ? "Stäng" : "Öppna"}</span>
                 </div>
-              </a>
-            </aside>
-          </div>
+              </button>
+            </div>
 
-          <div class="options-grid">
-            ${trip.options
-              .map((option) => {
-                const optionId = makeOptionId(trip, option);
-                const budgetState = getBudgetState(option.transportHotelSek);
-
-                return `
-                  <article class="option-card" id="${makeOptionId(trip, option)}">
-                    <div class="option-top">
-                      <div class="option-badges">
-                        <span class="tier">${option.tier}</span>
-                        <span class="status ${budgetState.className}">${budgetState.label}</span>
-                      </div>
-                      <button
-                        class="favorite-btn ${state.favorites.includes(optionId) ? "active" : ""}"
-                        type="button"
-                        data-favorite-id="${optionId}"
-                        aria-pressed="${state.favorites.includes(optionId)}"
-                      >
-                        ${state.favorites.includes(optionId) ? "Pinnad" : "Pinna"}
-                      </button>
+            <div class="city-content ${isOpen ? "is-open" : ""}">
+              <div class="city-header">
+                <article class="city-copy">
+                  <div class="city-kicker">
+                    <span class="chip">${trip.country}</span>
+                    <span class="chip">${trip.dates}</span>
+                  </div>
+                  <h2>${trip.city}</h2>
+                  <p>${trip.fit}</p>
+                  <div class="city-notes">
+                    <div class="note"><strong>Tider:</strong> <span>${trip.timing}</span></div>
+                    <div class="note"><strong>Bagagelogik:</strong> <span>${trip.baggage}</span></div>
+                    <div class="note"><strong>Brasklapp:</strong> <span>${trip.caveat}</span></div>
+                  </div>
+                </article>
+                <aside class="city-visuals">
+                  <a class="visual-card" href="${trip.visuals.city.source}" target="_blank" rel="noreferrer">
+                    <img src="${trip.visuals.city.image}" alt="${trip.city}" loading="lazy" />
+                    <div class="visual-label">
+                      <span>${trip.visuals.city.label}</span>
+                      <strong>${trip.visuals.city.title}</strong>
                     </div>
-                    <div>
-                      <h3>${option.hotel}</h3>
-                      <div class="meta-line">
-                        <span>${option.room}</span>
-                      </div>
+                  </a>
+                  <a class="visual-card" href="${trip.visuals.area.source}" target="_blank" rel="noreferrer">
+                    <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" loading="lazy" />
+                    <div class="visual-label">
+                      <span>${trip.visuals.area.label}</span>
+                      <strong>${trip.visuals.area.title}</strong>
                     </div>
+                  </a>
+                </aside>
+              </div>
 
-                    <div class="price-grid">
-                      <div class="price-box">
-                        <span>Transport + hotell</span>
-                        <strong>${formatSek(option.transportHotelSek)}</strong>
-                      </div>
-                      <div class="price-box">
-                        <span>Total inkl. 6 000 kr på plats</span>
-                        <strong>${formatSek(option.tripTotalSek)}</strong>
-                      </div>
-                    </div>
+              ${renderMobileTierTabs(trip, selectedOption.tier)}
 
-                    ${renderBudgetMeter(option.transportHotelSek)}
-
-                    <ul class="breakdown">
-                      <li><span>Hotellpris från datumsida</span><strong>${formatSek(option.hotelSek)}</strong></li>
-                      <li><span>Flygrutt idag</span><strong>${formatSek(option.flightSek)}</strong></li>
-                      <li><span>Bagageestimat</span><strong>${formatSek(option.baggageSek)}</strong></li>
-                      <li><span>Bil + Arlanda</span><strong>${formatSek(option.driveParkingSek)}</strong></li>
-                    </ul>
-
-                    <p>${option.note}</p>
-                    <div class="fine-print">
-                      <span>${option.flex}</span>
-                      <span>${option.taxNote}</span>
-                    </div>
-
-                    <div class="links">
-                      ${option.links
-                        .map(
-                          (link) =>
-                            `<a href="${link.url}" target="_blank" rel="noreferrer">${link.label}</a>`
-                        )
-                        .join("")}
-                    </div>
-
-                    <div class="sources">
-                      <span>Källor</span>
-                      ${option.sources
-                        .map(
-                          (source) =>
-                            `<a href="${source.url}" target="_blank" rel="noreferrer">${source.label}</a>`
-                        )
-                        .join("")}
-                    </div>
-                  </article>
-                `
-              })
-              .join("")}
-          </div>
-        </section>
-      `
+              <div class="options-grid">
+                ${trip.options
+                  .map((option) => renderOptionCard(trip, option, selectedOption.tier))
+                  .join("")}
+              </div>
+            </div>
+          </section>
+        `;
+      }
     )
     .join("");
 
@@ -1455,11 +1574,62 @@ const bindCompareControls = () => {
       render();
     });
   });
+
+  app.querySelectorAll("[data-city-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const city = button.dataset.cityToggle;
+      state.openCities = state.openCities.includes(city) ? [] : [city];
+      render();
+    });
+  });
+
+  app.querySelectorAll("[data-mobile-tier]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const city = button.dataset.mobileCity;
+      const tier = button.dataset.mobileTier;
+      state.mobileTierByCity[city] = tier;
+      setOpenCity(city);
+      render();
+    });
+  });
+
+  app.querySelectorAll('a[href^="#"]').forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const hash = link.getAttribute("href");
+
+      if (!hash || hash === "#") {
+        return;
+      }
+
+      const shouldRerender = applyHashToState(hash);
+
+      if (!shouldRerender) {
+        return;
+      }
+
+      event.preventDefault();
+      render();
+
+      if (window.history?.replaceState) {
+        window.history.replaceState(null, "", hash);
+      } else if (window.location) {
+        window.location.hash = hash;
+      }
+
+      window.requestAnimationFrame?.(() => scrollToHashTarget(hash));
+    });
+  });
 };
 
 const render = () => {
-  app.innerHTML = `${renderDecisionSection()}${renderFavoritesSection()}${renderMethodSection()}${renderCompareSection()}${renderTrips()}`;
+  app.innerHTML = `${renderMobileQuickNav()}${renderDecisionSection()}${renderFavoritesSection()}${renderMethodSection()}${renderCompareSection()}${renderTrips()}`;
   bindCompareControls();
 };
 
+const initialHash = window.location?.hash ?? "";
+applyHashToState(initialHash);
 render();
+
+if (initialHash) {
+  window.requestAnimationFrame?.(() => scrollToHashTarget(initialHash));
+}
