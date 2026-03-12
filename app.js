@@ -814,33 +814,33 @@ const state = {
 
 const decisionPicks = [
   {
-    label: "Bäst val för Filip & Vendela",
-    city: "Bologna",
+    label: "Bäst totalval inom briefen",
+    city: "Barcelona",
     tier: "Mitt i prick",
     reason:
-      "Bäst balans mellan romantik, personlighet och en totalsumma som fortfarande går att försvara.",
+      "Bästa kombinationen av direktflyg, kvarterskänsla, vegetariskt spelrum och en totalsumma som fortfarande håller sig inom er 12k-stretch.",
     featured: true,
   },
   {
-    label: "Bästa inom budget",
-    city: "Bologna",
-    tier: "Budget",
-    reason:
-      "Det enda kortet som i praktiken ligger nära er 10k-linje utan att kännas som en kompromissresa.",
-  },
-  {
-    label: "Bästa storstad",
+    label: "Smidigast inom 10k",
     city: "Barcelona",
     tier: "Budget",
     reason:
-      "Gamla kvarter, puls och kvällsliv i en stad som fortfarande går att räkna hem bättre än Paris och Rom.",
+      "Det tryggaste sättet att hålla er transportram utan att ge upp gamla kvarter, kvällspuls och enkel flyglogik.",
   },
   {
-    label: "Bästa romantiska stretch",
-    city: "Paris",
-    tier: "Mitt i prick",
+    label: "Mest känsla per krona",
+    city: "Bologna",
+    tier: "Budget",
     reason:
-      "Hjärtat säger Paris. Det är dyrt, men också närmast den sorts kvarter och stämning ni redan vet att ni älskar.",
+      "Det mest romantiska under 10k om ni prioriterar stadskänsla och hotellcharm högre än den smidigaste flygdagen.",
+  },
+  {
+    label: "Bästa boutique-stretch",
+    city: "Bologna",
+    tier: "Utökad",
+    reason:
+      "Det tydligaste vuxenvalet inom er stretch: mer hotellkänsla, kaffemaskin och fortfarande under 12k för transport + hotell.",
   },
 ];
 
@@ -930,8 +930,10 @@ const renderDecisionSection = () => {
           <p class="compare-kicker">Sista beslutsrundan</p>
           <h2>Om ni bara ska titta på fyra saker först, börja här</h2>
           <p>
-            Det här är min redaktionella läsning av shortlistan efter att priser, länkar,
-            hotellnivåer och helhetskänsla vägts mot varandra.
+            Toppen här premierar bara kort som faktiskt håller ihop när flyg, bagage,
+            bil, parkering och hotell räknas in. Därför lyfts Barcelona och Bologna
+            först, medan Paris och Rom ligger kvar längre ner som mer hjärtstyrda men
+            tydligt dyrare alternativ på just era datum.
           </p>
         </div>
         <div class="method-meta">
@@ -945,15 +947,43 @@ const renderDecisionSection = () => {
           .map((pick) => {
             const trip = trips.find((candidate) => candidate.city === pick.city);
             const option = getTierOption(trip, pick.tier);
+            const profile = compareProfiles[trip.city];
+            const budgetState = getBudgetState(option.transportHotelSek);
             return `
               <article class="decision-card ${pick.featured ? "featured" : ""}">
-                <span>${pick.label}</span>
+                <div class="decision-topline">
+                  <span>${pick.label}</span>
+                  <p class="status ${budgetState.className}">${budgetState.label}</p>
+                </div>
                 <h3>${pick.city} · ${pick.tier}</h3>
                 <p>${pick.reason}</p>
-                <div class="decision-meta">
-                  <strong>${formatSek(option.transportHotelSek)}</strong>
-                  <span>transport + hotell</span>
+                <div class="decision-price-row">
+                  <div class="decision-meta">
+                    <strong>${formatSek(option.transportHotelSek)}</strong>
+                    <span>transport + hotell</span>
+                  </div>
+                  <div class="decision-meta">
+                    <strong>${formatSek(option.tripTotalSek)}</strong>
+                    <span>total resa inkl. 6 000 kr på plats</span>
+                  </div>
                 </div>
+                <div class="decision-metrics">
+                  <div class="metric-box">
+                    <span>Flyg idag</span>
+                    <strong>${formatSek(option.flightSek)}</strong>
+                  </div>
+                  <div class="metric-box">
+                    <span>Bagage</span>
+                    <strong>${formatSek(option.baggageSek)}</strong>
+                  </div>
+                  <div class="metric-box">
+                    <span>Flygläge</span>
+                    <strong>${profile.flight.easeScore}/5</strong>
+                  </div>
+                </div>
+                <p class="decision-story">
+                  <strong>Flygbedömning:</strong> ${profile.flight.directness}. ${profile.flight.timing}.
+                </p>
                 <a href="#${makeOptionId(trip, option)}">Till kortet</a>
               </article>
             `;

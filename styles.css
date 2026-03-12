@@ -316,6 +316,14 @@ body::before {
     linear-gradient(135deg, rgba(255, 250, 244, 0.95), rgba(248, 242, 232, 0.92));
 }
 
+.decision-topline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
 .decision-card span {
   display: block;
   font-size: 0.78rem;
@@ -335,11 +343,21 @@ body::before {
   line-height: 1.58;
 }
 
+.decision-topline .status {
+  white-space: nowrap;
+}
+
+.decision-price-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .decision-meta {
   display: inline-flex;
   flex-direction: column;
   gap: 4px;
-  width: fit-content;
+  width: 100%;
   padding: 12px 14px;
   border-radius: 18px;
   background: rgba(67, 85, 63, 0.05);
@@ -348,6 +366,23 @@ body::before {
 
 .decision-meta strong {
   font-size: 1.15rem;
+}
+
+.decision-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.decision-story {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(67, 85, 63, 0.05);
+  border: 1px solid rgba(67, 85, 63, 0.08);
+}
+
+.decision-story strong {
+  color: var(--ink);
 }
 
 .decision-card a {
@@ -1272,6 +1307,11 @@ body::before {
 
   .decision-card.featured {
     grid-column: auto;
+  }
+
+  .decision-price-row,
+  .decision-metrics {
+    grid-template-columns: 1fr;
   }
 }
 
