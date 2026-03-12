@@ -23,12 +23,19 @@ Det här projektet ska hållas isolerat till den här mappen.
 ## Vad som är byggt
 
 - en lokal dashboard i svenska
+- en stor hero-banner med Filip och Vendelas Parisbild
 - favoritfunktion med lokal lagring i webbläsaren
 - snabbjämförelse för flyg och känsla
 - slutsektion med redaktionellt kuraterade toppval
 - budgetbalkar per alternativ
 - hotellänkar med exakta datumparametrar
 - Google Maps-länkar för hotellområden
+- metadata, favicon, manifest och delningsbild för publicerad webbversion
+
+## Publicering
+
+- GitHub-repo: `filipkillander/vendelip-travels`
+- Netlify-site: `https://vendelip-travels.netlify.app`
 
 ## Prislogik
 

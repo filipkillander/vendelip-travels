@@ -1,0 +1,15 @@
+{
+  "name": "Vendelip Travels",
+  "short_name": "Vendelip",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#efe6d6",
+  "theme_color": "#efe6d6",
+  "icons": [
+    {
+      "src": "/assets/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

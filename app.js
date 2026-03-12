@@ -2,6 +2,7 @@ const trips = [
   {
     city: "Barcelona",
     country: "Spanien",
+    themeClass: "theme-barcelona",
     dates: "28 april 2026 till 1 maj 2026",
     fit: "Bäst om ni vill ha en storstad med kvällspuls, gotiska gränder, långa luncher och den där lite slitna elegansen som gör att en plats känns levd snarare än uppställd.",
     timing:
@@ -163,6 +164,7 @@ const trips = [
   {
     city: "Paris",
     country: "Frankrike",
+    themeClass: "theme-paris",
     dates: "28 april 2026 till 1 maj 2026",
     fit: "Bäst om ni vill ge efter för caféliv, vänsterbank, små hotellbarer och den sortens storstadsromantik som känns som att resa in i sin egen favoritfilm.",
     timing:
@@ -324,6 +326,7 @@ const trips = [
   {
     city: "Rom",
     country: "Italien",
+    themeClass: "theme-rome",
     dates: "28 april 2026 till 1 maj 2026",
     fit: "Bäst om ni vill ha varm kvällsluft, trattorior, torg, vin och den sortens stad som känns nästan löjligt romantisk när den väl sitter.",
     timing:
@@ -485,6 +488,7 @@ const trips = [
   {
     city: "Bologna",
     country: "Italien",
+    themeClass: "theme-bologna",
     dates: "28 april 2026 till 1 maj 2026",
     fit: "Bäst om ni värderar långa middagar, vinbarer, arkader och lågmäld romantik högre än att själva flygrutten ska vara den smidigaste i listan.",
     timing:
@@ -808,9 +812,46 @@ const state = {
   favorites: loadFavorites(),
 };
 
+const decisionPicks = [
+  {
+    label: "Bäst val för Filip & Vendela",
+    city: "Bologna",
+    tier: "Mitt i prick",
+    reason:
+      "Bäst balans mellan romantik, personlighet och en totalsumma som fortfarande går att försvara.",
+    featured: true,
+  },
+  {
+    label: "Bästa inom budget",
+    city: "Bologna",
+    tier: "Budget",
+    reason:
+      "Det enda kortet som i praktiken ligger nära er 10k-linje utan att kännas som en kompromissresa.",
+  },
+  {
+    label: "Bästa storstad",
+    city: "Barcelona",
+    tier: "Budget",
+    reason:
+      "Gamla kvarter, puls och kvällsliv i en stad som fortfarande går att räkna hem bättre än Paris och Rom.",
+  },
+  {
+    label: "Bästa romantiska stretch",
+    city: "Paris",
+    tier: "Mitt i prick",
+    reason:
+      "Hjärtat säger Paris. Det är dyrt, men också närmast den sorts kvarter och stämning ni redan vet att ni älskar.",
+  },
+];
+
 const getTierOption = (trip, tier) => trip.options.find((option) => option.tier === tier);
 
 const makeOptionId = (trip, option) => `${slugify(trip.city)}--${slugify(option.tier)}`;
+
+const getLowestTransportOption = () =>
+  [...trips]
+    .flatMap((trip) => trip.options.map((option) => ({ trip, option })))
+    .sort((left, right) => left.option.transportHotelSek - right.option.transportHotelSek)[0];
 
 const findOptionById = (optionId) => {
   for (const trip of trips) {
@@ -841,7 +882,7 @@ const compareSorters = {
   vibe: (trip) => -compareProfiles[trip.city].country.vibeScore,
 };
 
-const sortTripsForCompare = (mode, sortKey) =>
+const sortTripsForCompare = (sortKey) =>
   [...trips].sort((left, right) => {
     const leftScore = compareSorters[sortKey](left);
     const rightScore = compareSorters[sortKey](right);
@@ -856,9 +897,9 @@ const sortTripsForCompare = (mode, sortKey) =>
   });
 
 const renderCompareSummary = () => {
-  const cheapestFlight = sortTripsForCompare("flight", "flightPrice")[0];
-  const cheapestMid = sortTripsForCompare("flight", "midPackage")[0];
-  const mostRomantic = sortTripsForCompare("country", "romance")[0];
+  const cheapestFlight = sortTripsForCompare("flightPrice")[0];
+  const cheapestMid = sortTripsForCompare("midPackage")[0];
+  const mostRomantic = sortTripsForCompare("romance")[0];
 
   return `
     <div class="compare-summary">
@@ -882,40 +923,8 @@ const renderCompareSummary = () => {
 };
 
 const renderDecisionSection = () => {
-  const picks = [
-    {
-      label: "Bäst val för Filip & Vendela",
-      city: "Bologna",
-      tier: "Mitt i prick",
-      reason:
-        "Bäst balans mellan romantik, personlighet och en totalsumma som fortfarande går att försvara.",
-      featured: true,
-    },
-    {
-      label: "Bästa inom budget",
-      city: "Bologna",
-      tier: "Budget",
-      reason:
-        "Det enda kortet som i praktiken ligger nära er 10k-linje utan att kännas som en kompromissresa.",
-    },
-    {
-      label: "Bästa storstad",
-      city: "Barcelona",
-      tier: "Budget",
-      reason:
-        "Gamla kvarter, puls och kvällsliv i en stad som fortfarande går att räkna hem bättre än Paris och Rom.",
-    },
-    {
-      label: "Bästa romantiska stretch",
-      city: "Paris",
-      tier: "Mitt i prick",
-      reason:
-        "Hjärtat säger Paris. Det är dyrt, men också närmast den sorts kvarter och stämning ni redan vet att ni älskar.",
-    },
-  ];
-
   return `
-    <section class="decision-section">
+    <section class="decision-section" id="slutval">
       <div class="decision-head">
         <div>
           <p class="compare-kicker">Sista beslutsrundan</p>
@@ -932,7 +941,7 @@ const renderDecisionSection = () => {
       </div>
 
       <div class="decision-grid">
-        ${picks
+        ${decisionPicks
           .map((pick) => {
             const trip = trips.find((candidate) => candidate.city === pick.city);
             const option = getTierOption(trip, pick.tier);
@@ -956,12 +965,10 @@ const renderDecisionSection = () => {
 };
 
 const renderMethodSection = () => {
-  const closestBudget = [...trips]
-    .flatMap((trip) => trip.options.map((option) => ({ trip, option })))
-    .sort((left, right) => left.option.transportHotelSek - right.option.transportHotelSek)[0];
+  const closestBudget = getLowestTransportOption();
 
   return `
-    <section class="method-section">
+    <section class="method-section" id="metod">
       <div class="method-head">
         <div>
           <p class="compare-kicker">Så läser ni siffrorna</p>
@@ -1005,10 +1012,8 @@ const renderMethodSection = () => {
 };
 
 const renderGuideStrip = () => {
-  const smoothest = sortTripsForCompare("flight", "ease")[0];
-  const bestValue = [...trips]
-    .flatMap((trip) => trip.options.map((option) => ({ trip, option })))
-    .sort((left, right) => left.option.transportHotelSek - right.option.transportHotelSek)[0];
+  const smoothest = sortTripsForCompare("ease")[0];
+  const bestValue = getLowestTransportOption();
 
   return `
     <div class="guide-strip">
@@ -1058,7 +1063,7 @@ const renderFavoritesSection = () => {
   const favorites = state.favorites.map(findOptionById).filter(Boolean);
 
   return `
-    <section class="favorites-section">
+    <section class="favorites-section" id="favoriter">
       <div class="favorites-head">
         <div>
           <p class="compare-kicker">Favoriter</p>
@@ -1210,11 +1215,11 @@ const renderCompareCard = (trip, index) => {
 };
 
 const renderCompareSection = () => {
-  const orderedTrips = sortTripsForCompare(state.mode, state.sort);
+  const orderedTrips = sortTripsForCompare(state.sort);
   const modeConfig = compareModes[state.mode];
 
   return `
-    <section class="compare-section">
+    <section class="compare-section" id="jamfor">
       <div class="compare-head">
         <div class="compare-copy">
           <p class="compare-kicker">Snabbjämförelse</p>
@@ -1274,7 +1279,7 @@ const renderTrips = () =>
   trips
     .map(
       (trip) => `
-        <section class="city-section">
+        <section class="city-section ${trip.themeClass}">
           <div class="city-header">
             <article class="city-copy">
               <div class="city-kicker">
@@ -1291,14 +1296,14 @@ const renderTrips = () =>
             </article>
             <aside class="city-visuals">
               <a class="visual-card" href="${trip.visuals.city.source}" target="_blank" rel="noreferrer">
-                <img src="${trip.visuals.city.image}" alt="${trip.city}" />
+                <img src="${trip.visuals.city.image}" alt="${trip.city}" loading="lazy" />
                 <div class="visual-label">
                   <span>${trip.visuals.city.label}</span>
                   <strong>${trip.visuals.city.title}</strong>
                 </div>
               </a>
               <a class="visual-card" href="${trip.visuals.area.source}" target="_blank" rel="noreferrer">
-                <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" />
+                <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" loading="lazy" />
                 <div class="visual-label">
                   <span>${trip.visuals.area.label}</span>
                   <strong>${trip.visuals.area.title}</strong>
