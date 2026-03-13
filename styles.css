@@ -1153,6 +1153,21 @@ body::before {
   box-shadow: 0 0 0 4px rgba(67, 85, 63, 0.08);
 }
 
+.package-results {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.package-results p {
+  margin: 0;
+  color: var(--olive);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
 .package-filter-row .toggle-btn {
   min-width: 0;
 }
@@ -1242,8 +1257,7 @@ body::before {
 .package-spotlight span,
 .package-note-card span,
 .package-stat span,
-.package-options-head p,
-.mobile-dock-btn span {
+.package-options-head p {
   display: block;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -1323,6 +1337,18 @@ body::before {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.package-caveat {
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(28, 33, 29, 0.08);
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.package-caveat strong {
+  color: var(--ink);
 }
 
 .package-card-actions {
@@ -1486,14 +1512,7 @@ body::before {
   gap: 10px;
 }
 
-.city-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
-  gap: 18px;
-}
-
-.city-copy,
-.city-visuals {
+.city-copy {
   border-radius: 22px;
   overflow: hidden;
   background: var(--panel);
@@ -1532,12 +1551,6 @@ body::before {
   margin: 14px 0 0;
   line-height: 1.62;
   color: var(--muted);
-}
-
-.city-visuals {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 400px;
 }
 
 .visual-card {
@@ -1936,7 +1949,6 @@ body::before {
   .package-card-stats,
   .package-note-grid,
   .package-options-head,
-  .city-header,
   .options-grid {
     grid-template-columns: 1fr;
   }
@@ -1952,10 +1964,6 @@ body::before {
 
   .package-card-primary {
     min-height: 260px;
-  }
-
-  .city-visuals {
-    min-height: 240px;
   }
 
   .visual-card {
@@ -2078,6 +2086,14 @@ body::before {
     min-height: 46px;
   }
 
+  .package-results {
+    align-items: stretch;
+  }
+
+  .package-results p {
+    width: 100%;
+  }
+
   .city-content {
     display: none;
   }
@@ -2125,13 +2141,6 @@ body::before {
   .package-card-actions .toggle-btn,
   .package-filter-row .toggle-btn {
     width: 100%;
-  }
-
-  .city-visuals {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    min-height: 0;
   }
 
   .favorite-top,
@@ -2272,6 +2281,14 @@ body::before {
       transform 140ms ease;
   }
 
+  .mobile-dock-btn span {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: none;
+  }
+
   .mobile-dock-btn .icon-inline {
     width: 18px;
     height: 18px;
@@ -2313,5 +2330,9 @@ body::before {
   .mobile-dock-btn {
     min-height: 54px;
     font-size: 0.7rem;
+  }
+
+  .mobile-dock-btn span {
+    font-size: 0.68rem;
   }
 }

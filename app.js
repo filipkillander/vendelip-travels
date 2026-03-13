@@ -753,6 +753,12 @@ const normalizeSearchText = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+const getLeadSentence = (value) => {
+  const text = String(value).trim();
+  const match = text.match(/^.*?[.!?](?:\s|$)/);
+  return (match?.[0] ?? text).trim();
+};
+
 const iconSvg = {
   plane:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.5 22 12 2 7.5l5 4.5-5 4.5Z"/></svg>',
@@ -852,7 +858,7 @@ const defaultSortByMode = {
 };
 
 const packageFilters = [
-  { key: "all", label: "Alla paket" },
+  { key: "all", label: "Alla" },
   { key: "withinStretch", label: "Inom 12k" },
   { key: "easyFlight", label: "Smidigt flyg" },
   { key: "romantic", label: "Mest känsla" },
@@ -954,6 +960,9 @@ const getDiscoveryTrips = () =>
     (left, right) => packageTripOrder.indexOf(left.city) - packageTripOrder.indexOf(right.city)
   );
 
+const getVisibleDiscoveryTrips = () =>
+  getDiscoveryTrips().filter((trip) => doesTripMatchPackageDiscovery(trip));
+
 const tripMatchesPackageFilter = (trip) => {
   const budgetOption = getLowestTransportOptionForTrip(trip);
   const profile = compareProfiles[trip.city];
@@ -1001,6 +1010,29 @@ const tripMatchesPackageQuery = (trip) => {
 
 const doesTripMatchPackageDiscovery = (trip) =>
   tripMatchesPackageFilter(trip) && tripMatchesPackageQuery(trip);
+
+const hasActivePackageDiscovery = () =>
+  Boolean(state.packageQuery.trim()) || state.packageFilter !== "all";
+
+const getPackageStatusText = () => {
+  const visibleTrips = getVisibleDiscoveryTrips();
+  const totalTrips = getDiscoveryTrips().length;
+  const query = state.packageQuery.trim();
+
+  if (!hasActivePackageDiscovery()) {
+    return `${visibleTrips.length} paket i spel`;
+  }
+
+  if (!visibleTrips.length) {
+    return query ? `Ingen träff för "${query}"` : "Inget paket matchar filtret just nu";
+  }
+
+  if (query) {
+    return `${visibleTrips.length} av ${totalTrips} paket matchar "${query}"`;
+  }
+
+  return `${visibleTrips.length} av ${totalTrips} paket matchar filtret`;
+};
 
 const isCompactViewport = () => window.matchMedia?.("(max-width: 720px)")?.matches ?? false;
 
@@ -1133,7 +1165,7 @@ const getActiveDockSection = () => {
   const checkpoints = [
     { key: "top", id: "top" },
     { key: "slutval", id: "slutval" },
-    { key: "favoriter", id: "favoriter" },
+    { key: "slutval", id: "favoriter" },
     { key: "jamfor", id: "jamfor" },
     { key: "paket", id: "paket" },
     ...getDiscoveryTrips().map((trip) => ({ key: "paket", id: makeCityId(trip) })),
@@ -1185,7 +1217,7 @@ const requestDockUpdate = () => {
 };
 
 const applyPackageDiscovery = () => {
-  const visibleTrips = getDiscoveryTrips().filter((trip) => doesTripMatchPackageDiscovery(trip));
+  const visibleTrips = getVisibleDiscoveryTrips();
   const visibleCities = new Set(visibleTrips.map((trip) => trip.city));
 
   document.querySelectorAll("[data-package-city]").forEach((element) => {
@@ -1199,9 +1231,9 @@ const applyPackageDiscovery = () => {
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 
-  const countEl = document.querySelector("[data-package-count]");
-  if (countEl) {
-    countEl.textContent = String(visibleTrips.length);
+  const statusEl = document.querySelector("[data-package-status]");
+  if (statusEl) {
+    statusEl.textContent = getPackageStatusText();
   }
 
   const inputEl = document.querySelector("[data-package-query]");
@@ -1212,6 +1244,11 @@ const applyPackageDiscovery = () => {
   const emptyEl = document.querySelector("[data-package-empty]");
   if (emptyEl instanceof HTMLElement) {
     emptyEl.hidden = visibleTrips.length > 0;
+  }
+
+  const inlineResetButton = document.querySelector("[data-package-inline-reset]");
+  if (inlineResetButton instanceof HTMLElement) {
+    inlineResetButton.hidden = !hasActivePackageDiscovery();
   }
 
   requestDockUpdate();
@@ -1811,15 +1848,15 @@ const renderPackageExplorerSection = () => `
   <section class="package-section" id="paket">
     <div class="package-head">
       <div class="package-copy">
-        <p class="compare-kicker">Paketutforskaren</p>
-        <h2>Filtrera bort brus och öppna bara resor som fortfarande lockar</h2>
+        <p class="compare-kicker">Paketguiden</p>
+        <h2>Få bort brus och öppna rätt resa snabbare</h2>
         <p>
-          Här kan ni göra det TWDU gör bra: sök, filtrera och skumma igenom tydliga
-          paketkort innan ni går ner i de fulla tre-nivå-uppläggen.
+          Sök på stad, hotell eller känsla och håll kvar bara de paket som
+          fortfarande känns värda en närmare titt.
         </p>
       </div>
       <div class="method-meta">
-        <span><strong data-package-count>${getDiscoveryTrips().length}</strong> paket i spel</span>
+        <span>Budgetram: 10k mål · 12k stretch</span>
         <span>Fasta datum: 28 april till 1 maj 2026</span>
       </div>
     </div>
@@ -1832,7 +1869,7 @@ const renderPackageExplorerSection = () => `
           type="search"
           inputmode="search"
           autocomplete="off"
-          placeholder="Sök stad, hotell eller känsla"
+          placeholder="Sök stad, hotell eller kvarterskänsla"
           value="${escapeHtml(state.packageQuery)}"
           data-package-query
         />
@@ -1855,6 +1892,19 @@ const renderPackageExplorerSection = () => `
       </div>
     </div>
 
+    <div class="package-results">
+      <p data-package-status>${escapeHtml(getPackageStatusText())}</p>
+      <button
+        class="toggle-btn subtle"
+        type="button"
+        data-package-reset="true"
+        data-package-inline-reset
+        ${hasActivePackageDiscovery() ? "" : "hidden"}
+      >
+        Rensa
+      </button>
+    </div>
+
     <div class="package-grid">
       ${getDiscoveryTrips().map((trip) => renderPackageExplorerCard(trip)).join("")}
     </div>
@@ -1869,10 +1919,10 @@ const renderPackageExplorerSection = () => `
 
 const renderMobileDock = () => {
   const items = [
+    { key: "top", label: "Start", iconName: "home", target: "#top" },
     { key: "slutval", label: "Slutval", iconName: "wallet", target: "#slutval" },
     { key: "jamfor", label: "Jämför", iconName: "map", target: "#jamfor" },
     { key: "paket", label: "Paket", iconName: "hotel", target: "#paket" },
-    { key: "top", label: "Toppen", iconName: "home", target: "#top" },
   ];
 
   return `
@@ -2079,7 +2129,7 @@ const renderTrips = () =>
                     <article class="package-note-card">
                       <span>${iconText("plane", "Tidskänsla")}</span>
                       <strong>${profile.flight.directness}</strong>
-                      <p>${trip.timing}</p>
+                      <p>${getLeadSentence(trip.timing)}</p>
                     </article>
                     <article class="package-note-card">
                       <span>${iconText("heart", "Stadston")}</span>
@@ -2089,9 +2139,12 @@ const renderTrips = () =>
                     <article class="package-note-card">
                       <span>${iconText("bag", "Bagagelogik")}</span>
                       <strong>${selectedOption.tier} just nu</strong>
-                      <p>${trip.baggage} ${trip.caveat}</p>
+                      <p>${getLeadSentence(trip.baggage)}</p>
                     </article>
                   </div>
+                  <p class="package-caveat">
+                    <strong>Se upp med:</strong> ${trip.caveat}
+                  </p>
                 </article>
               </div>
 
