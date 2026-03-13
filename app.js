@@ -735,6 +735,24 @@ const formatSek = (value) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const escapeHtml = (value) =>
+  String(value).replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[character] ?? character;
+  });
+
+const normalizeSearchText = (value) =>
+  String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
 const iconSvg = {
   plane:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16.5 22 12 2 7.5l5 4.5-5 4.5Z"/></svg>',
@@ -750,6 +768,10 @@ const iconSvg = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8.5 7.5h5a2.5 2.5 0 0 1 0 5h-3a2.5 2.5 0 0 0 0 5h5"/></svg>',
   map:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>',
+  search:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 5 5"/></svg>',
+  home:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
   link:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5"/><path d="M14 11a5 5 0 0 0-7.07 0L5.5 12.41a5 5 0 0 0 7.07 7.07L14 19"/></svg>',
   heart:
@@ -828,6 +850,15 @@ const defaultSortByMode = {
   flight: "midPackage",
   country: "romance",
 };
+
+const packageFilters = [
+  { key: "all", label: "Alla paket" },
+  { key: "withinStretch", label: "Inom 12k" },
+  { key: "easyFlight", label: "Smidigt flyg" },
+  { key: "romantic", label: "Mest känsla" },
+];
+
+const packageTripOrder = ["Barcelona", "Bologna", "Paris", "Rom"];
 
 const mobileDefaultTierByCity = {
   Barcelona: "Mitt i prick",
@@ -912,6 +943,65 @@ const getOptionLink = (option, labelPart) =>
 const getSelectedTierForTrip = (trip) =>
   state.mobileTierByCity[trip.city] ?? trip.options[1]?.tier ?? trip.options[0].tier;
 
+const getLowestTransportOptionForTrip = (trip) =>
+  [...trip.options].sort((left, right) => left.transportHotelSek - right.transportHotelSek)[0];
+
+const getEditorialOptionForTrip = (trip) =>
+  getTierOption(trip, "Mitt i prick") ?? trip.options[1] ?? trip.options[0];
+
+const getDiscoveryTrips = () =>
+  [...trips].sort(
+    (left, right) => packageTripOrder.indexOf(left.city) - packageTripOrder.indexOf(right.city)
+  );
+
+const tripMatchesPackageFilter = (trip) => {
+  const budgetOption = getLowestTransportOptionForTrip(trip);
+  const profile = compareProfiles[trip.city];
+
+  if (state.packageFilter === "withinStretch") {
+    return budgetOption.transportHotelSek <= stretchGoalSek;
+  }
+
+  if (state.packageFilter === "easyFlight") {
+    return profile.flight.easeScore >= 4;
+  }
+
+  if (state.packageFilter === "romantic") {
+    return profile.country.romanceScore >= 5 || profile.country.vibeScore >= 5;
+  }
+
+  return true;
+};
+
+const tripMatchesPackageQuery = (trip) => {
+  const query = normalizeSearchText(state.packageQuery.trim());
+
+  if (!query) {
+    return true;
+  }
+
+  const profile = compareProfiles[trip.city];
+  const haystack = normalizeSearchText(
+    [
+      trip.city,
+      trip.country,
+      trip.fit,
+      trip.timing,
+      trip.baggage,
+      trip.caveat,
+      profile.country.bestFor,
+      profile.country.mood,
+      profile.country.rhythm,
+      ...trip.options.map((option) => [option.tier, option.hotel, option.room, option.note].join(" ")),
+    ].join(" ")
+  );
+
+  return haystack.includes(query);
+};
+
+const doesTripMatchPackageDiscovery = (trip) =>
+  tripMatchesPackageFilter(trip) && tripMatchesPackageQuery(trip);
+
 const isCompactViewport = () => window.matchMedia?.("(max-width: 720px)")?.matches ?? false;
 
 const getDisclosureOpenAttr = (defaultOpen = false) =>
@@ -930,6 +1020,9 @@ const state = {
   favorites: normalizeFavorites(loadFavorites()),
   openCities: [trips[0].city],
   mobileTierByCity: { ...mobileDefaultTierByCity },
+  packageQuery: "",
+  packageFilter: "all",
+  activeDockSection: "top",
 };
 
 const setOpenCity = (city) => {
@@ -995,6 +1088,133 @@ const scheduleHashScroll = (hash) => {
   }
 
   window.setTimeout?.(run, 0);
+};
+
+const getCleanLocation = () => `${window.location.pathname}${window.location.search}`;
+
+const navigateToHash = (hash, { preserveHash = false, focusSelector = "" } = {}) => {
+  if (!hash || hash === "#") {
+    return;
+  }
+
+  const shouldRerender = applyHashToState(hash);
+
+  if (shouldRerender) {
+    render();
+  }
+
+  if (window.history?.replaceState) {
+    window.history.replaceState(null, "", preserveHash ? hash : getCleanLocation());
+  } else if (preserveHash && window.location) {
+    window.location.hash = hash;
+  }
+
+  scheduleHashScroll(hash);
+
+  if (focusSelector) {
+    window.setTimeout?.(() => {
+      const focusTarget = document.querySelector(focusSelector);
+
+      if (!(focusTarget instanceof HTMLElement)) {
+        return;
+      }
+
+      focusTarget.focus({ preventScroll: true });
+      if ("select" in focusTarget && typeof focusTarget.select === "function") {
+        focusTarget.select();
+      }
+    }, 220);
+  }
+};
+
+let dockFrame = 0;
+
+const getActiveDockSection = () => {
+  const checkpoints = [
+    { key: "top", id: "top" },
+    { key: "slutval", id: "slutval" },
+    { key: "favoriter", id: "favoriter" },
+    { key: "jamfor", id: "jamfor" },
+    { key: "paket", id: "paket" },
+    ...getDiscoveryTrips().map((trip) => ({ key: "paket", id: makeCityId(trip) })),
+  ];
+  const marker = window.innerHeight * 0.38;
+  let active = "top";
+
+  checkpoints.forEach(({ key, id }) => {
+    const section = document.getElementById(id);
+
+    if (!section || section.hidden) {
+      return;
+    }
+
+    const rect = section.getBoundingClientRect();
+
+    if (rect.top <= marker && rect.bottom >= marker * 0.25) {
+      active = key;
+    }
+  });
+
+  return active;
+};
+
+const updateDockHighlight = () => {
+  state.activeDockSection = getActiveDockSection();
+
+  document.querySelectorAll("[data-dock-link]").forEach((button) => {
+    const isActive = button.dataset.dockLink === state.activeDockSection;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+};
+
+const requestDockUpdate = () => {
+  if (!window.requestAnimationFrame) {
+    updateDockHighlight();
+    return;
+  }
+
+  if (dockFrame) {
+    return;
+  }
+
+  dockFrame = window.requestAnimationFrame(() => {
+    dockFrame = 0;
+    updateDockHighlight();
+  });
+};
+
+const applyPackageDiscovery = () => {
+  const visibleTrips = getDiscoveryTrips().filter((trip) => doesTripMatchPackageDiscovery(trip));
+  const visibleCities = new Set(visibleTrips.map((trip) => trip.city));
+
+  document.querySelectorAll("[data-package-city]").forEach((element) => {
+    const city = element.dataset.packageCity;
+    element.hidden = Boolean(city) && !visibleCities.has(city);
+  });
+
+  document.querySelectorAll("[data-package-filter]").forEach((button) => {
+    const isActive = button.dataset.packageFilter === state.packageFilter;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+
+  const countEl = document.querySelector("[data-package-count]");
+  if (countEl) {
+    countEl.textContent = String(visibleTrips.length);
+  }
+
+  const inputEl = document.querySelector("[data-package-query]");
+  if (inputEl instanceof HTMLInputElement && inputEl.value !== state.packageQuery) {
+    inputEl.value = state.packageQuery;
+  }
+
+  const emptyEl = document.querySelector("[data-package-empty]");
+  if (emptyEl instanceof HTMLElement) {
+    emptyEl.hidden = visibleTrips.length > 0;
+  }
+
+  requestDockUpdate();
 };
 
 const saveFavorites = () => {
@@ -1133,7 +1353,7 @@ const renderDecisionSection = () => {
                     <strong>Varför den här lyfts:</strong> ${profile.flight.directness}. ${profile.flight.timing}
                   </p>
                   <div class="decision-actions">
-                    <a href="#${makeOptionId(trip, option)}">Gå till hela kortet</a>
+                    <a href="#${makeOptionId(trip, option)}" data-keep-hash="true">Gå till hela kortet</a>
                   </div>
                 </div>
               </details>
@@ -1278,7 +1498,7 @@ const renderFavoritesSection = () => {
                       </div>
                       <p>${option.note}</p>
                       <div class="favorite-links">
-                        <a href="#${optionId}">${icon("link")}<span>Till kortet</span></a>
+                        <a href="#${optionId}" data-keep-hash="true">${icon("link")}<span>Till kortet</span></a>
                         <a href="${hotelLink.url}" target="_blank" rel="noreferrer">${icon("hotel")}<span>Hotell</span></a>
                         <a href="${mapsLink.url}" target="_blank" rel="noreferrer">${icon("map")}<span>Google Maps</span></a>
                       </div>
@@ -1512,6 +1732,173 @@ const renderCompareSection = () => {
   `;
 };
 
+const renderPackageExplorerCard = (trip) => {
+  const featuredOption = getEditorialOptionForTrip(trip);
+  const budgetOption = getLowestTransportOptionForTrip(trip);
+  const profile = compareProfiles[trip.city];
+  const budgetState = getBudgetState(featuredOption.transportHotelSek);
+
+  return `
+    <article class="package-card ${trip.themeClass}" data-package-city="${trip.city}">
+      <div class="package-card-media">
+        <a class="package-card-primary" href="${trip.visuals.city.source}" target="_blank" rel="noreferrer">
+          <img src="${trip.visuals.city.image}" alt="${trip.visuals.city.title}" loading="eager" decoding="async" />
+          <div class="visual-label">
+            <span>${trip.visuals.city.label}</span>
+            <strong>${trip.visuals.city.title}</strong>
+          </div>
+        </a>
+        <div class="package-card-side">
+          <a class="package-card-secondary" href="${trip.visuals.area.source}" target="_blank" rel="noreferrer">
+            <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" loading="eager" decoding="async" />
+            <div class="visual-label">
+              <span>${trip.visuals.area.label}</span>
+              <strong>${trip.visuals.area.title}</strong>
+            </div>
+          </a>
+          <article class="package-card-stay">
+            <span>Mitt i prick just nu</span>
+            <strong>${featuredOption.hotel}</strong>
+            <p>${featuredOption.tier} · ${formatSek(featuredOption.transportHotelSek)}</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="package-card-copy">
+        <div class="package-card-topline">
+          <span class="compare-rank">${trip.country}</span>
+          <span class="status ${budgetState.className}">${budgetState.label}</span>
+        </div>
+        <h3>${trip.city}</h3>
+        <p>${trip.fit}</p>
+        <div class="package-card-stats">
+          <div class="package-stat">
+            <span>${iconText("wallet", "Från")}</span>
+            <strong>${formatSek(budgetOption.transportHotelSek)}</strong>
+          </div>
+          <div class="package-stat">
+            <span>${iconText("plane", "Flygsmidighet")}</span>
+            <strong>${profile.flight.easeScore}/5</strong>
+          </div>
+          <div class="package-stat">
+            <span>${iconText("heart", "Landston")}</span>
+            <strong>${profile.country.mood}</strong>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-pill">${profile.country.bestFor}</span>
+          <span class="score-pill">${profile.country.rhythm}</span>
+        </div>
+        <div class="package-card-actions">
+          <button class="toggle-btn" type="button" data-scroll-target="#${makeCityId(trip)}">
+            Öppna paketet
+          </button>
+          <button
+            class="toggle-btn subtle"
+            type="button"
+            data-scroll-target="#${makeOptionId(trip, featuredOption)}"
+            data-keep-hash="true"
+          >
+            Till rekommendationen
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+};
+
+const renderPackageExplorerSection = () => `
+  <section class="package-section" id="paket">
+    <div class="package-head">
+      <div class="package-copy">
+        <p class="compare-kicker">Paketutforskaren</p>
+        <h2>Filtrera bort brus och öppna bara resor som fortfarande lockar</h2>
+        <p>
+          Här kan ni göra det TWDU gör bra: sök, filtrera och skumma igenom tydliga
+          paketkort innan ni går ner i de fulla tre-nivå-uppläggen.
+        </p>
+      </div>
+      <div class="method-meta">
+        <span><strong data-package-count>${getDiscoveryTrips().length}</strong> paket i spel</span>
+        <span>Fasta datum: 28 april till 1 maj 2026</span>
+      </div>
+    </div>
+
+    <div class="package-toolbar">
+      <label class="package-search" for="package-search">
+        ${icon("search")}
+        <input
+          id="package-search"
+          type="search"
+          inputmode="search"
+          autocomplete="off"
+          placeholder="Sök stad, hotell eller känsla"
+          value="${escapeHtml(state.packageQuery)}"
+          data-package-query
+        />
+      </label>
+      <div class="toggle-row package-filter-row">
+        ${packageFilters
+          .map(
+            (filter) => `
+              <button
+                class="toggle-btn subtle ${state.packageFilter === filter.key ? "active" : ""}"
+                type="button"
+                data-package-filter="${filter.key}"
+                aria-pressed="${state.packageFilter === filter.key}"
+              >
+                ${filter.label}
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+
+    <div class="package-grid">
+      ${getDiscoveryTrips().map((trip) => renderPackageExplorerCard(trip)).join("")}
+    </div>
+
+    <div class="packages-empty" data-package-empty hidden>
+      <strong>Inget paket matchar just nu.</strong>
+      <p>Rensa sökningen eller gå tillbaka till Alla paket så får ni hela shortlistan igen.</p>
+      <button class="toggle-btn" type="button" data-package-reset="true">Visa alla paket</button>
+    </div>
+  </section>
+`;
+
+const renderMobileDock = () => {
+  const items = [
+    { key: "slutval", label: "Slutval", iconName: "wallet", target: "#slutval" },
+    { key: "jamfor", label: "Jämför", iconName: "map", target: "#jamfor" },
+    { key: "paket", label: "Paket", iconName: "hotel", target: "#paket" },
+    { key: "top", label: "Toppen", iconName: "home", target: "#top" },
+  ];
+
+  return `
+    <nav class="mobile-dock" aria-label="Snabbnavigering på mobil">
+      <div class="mobile-dock-shell">
+        ${items
+          .map(
+            (item) => `
+              <button
+                class="mobile-dock-btn ${state.activeDockSection === item.key ? "is-active" : ""}"
+                type="button"
+                data-scroll-target="${item.target}"
+                data-dock-link="${item.key}"
+                aria-pressed="${state.activeDockSection === item.key ? "true" : "false"}"
+              >
+                ${icon(item.iconName)}
+                <span>${item.label}</span>
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    </nav>
+  `;
+};
+
 const renderMobileTierTabs = (trip, selectedTier) => `
   <div class="mobile-tier-tabs" role="group" aria-label="${trip.city} prisnivåer">
     ${trip.options
@@ -1609,18 +1996,19 @@ const renderOptionCard = (trip, option, selectedTier) => {
 };
 
 const renderTrips = () =>
-  trips
+  getDiscoveryTrips()
     .map(
       (trip) => {
         const selectedTier = getSelectedTierForTrip(trip);
         const selectedOption = getTierOption(trip, selectedTier) ?? trip.options[0];
+        const featuredOption = getEditorialOptionForTrip(trip);
         const isOpen = state.openCities.includes(trip.city);
         const budgetState = getBudgetState(selectedOption.transportHotelSek);
         const profile = compareProfiles[trip.city];
         const cityContentId = makeCityContentId(trip);
 
         return `
-          <section class="city-section ${trip.themeClass}" id="${makeCityId(trip)}">
+          <section class="city-section ${trip.themeClass}" id="${makeCityId(trip)}" data-package-city="${trip.city}">
             <div class="city-mobile-summary">
               <button
                 class="city-mobile-toggle"
@@ -1629,6 +2017,9 @@ const renderTrips = () =>
                 aria-expanded="${isOpen}"
                 aria-controls="${cityContentId}"
               >
+                <span class="city-mobile-thumb" aria-hidden="true">
+                  <img src="${trip.visuals.city.image}" alt="" loading="eager" decoding="async" />
+                </span>
                 <div class="city-mobile-copy">
                   <span>${trip.country}</span>
                   <strong>${trip.city}</strong>
@@ -1642,7 +2033,41 @@ const renderTrips = () =>
             </div>
 
             <div class="city-content ${isOpen ? "is-open" : ""}" id="${cityContentId}">
-              <div class="city-header">
+              <div class="package-hero">
+                <aside class="package-gallery">
+                  <a class="package-hero-main visual-card" href="${trip.visuals.city.source}" target="_blank" rel="noreferrer">
+                    <img src="${trip.visuals.city.image}" alt="${trip.city}" loading="lazy" />
+                    <div class="visual-label">
+                      <span>${trip.visuals.city.label}</span>
+                      <strong>${trip.visuals.city.title}</strong>
+                    </div>
+                  </a>
+                  <div class="package-gallery-stack">
+                    <a class="package-hero-secondary visual-card" href="${trip.visuals.area.source}" target="_blank" rel="noreferrer">
+                      <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" loading="lazy" />
+                      <div class="visual-label">
+                        <span>${trip.visuals.area.label}</span>
+                        <strong>${trip.visuals.area.title}</strong>
+                      </div>
+                    </a>
+                    <article class="package-spotlight">
+                      <span>Rekommenderat paket</span>
+                      <strong>${featuredOption.tier} · ${featuredOption.hotel}</strong>
+                      <p>${featuredOption.room}</p>
+                      <div class="package-spotlight-metrics">
+                        <div>
+                          <span>${iconText("wallet", "Transport + hotell")}</span>
+                          <strong>${formatSek(featuredOption.transportHotelSek)}</strong>
+                        </div>
+                        <div>
+                          <span>${iconText("plane", "Flygsmidighet")}</span>
+                          <strong>${profile.flight.easeScore}/5</strong>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                </aside>
+
                 <article class="city-copy">
                   <div class="city-kicker">
                     <span class="chip">${trip.country}</span>
@@ -1650,36 +2075,44 @@ const renderTrips = () =>
                   </div>
                   <h2>${trip.city}</h2>
                   <p>${trip.fit}</p>
-                  <div class="city-notes">
-                    <div class="note"><strong>Tider:</strong> <span>${trip.timing}</span></div>
-                    <div class="note"><strong>Bagagelogik:</strong> <span>${trip.baggage}</span></div>
-                    <div class="note"><strong>Brasklapp:</strong> <span>${trip.caveat}</span></div>
+                  <div class="package-note-grid">
+                    <article class="package-note-card">
+                      <span>${iconText("plane", "Tidskänsla")}</span>
+                      <strong>${profile.flight.directness}</strong>
+                      <p>${trip.timing}</p>
+                    </article>
+                    <article class="package-note-card">
+                      <span>${iconText("heart", "Stadston")}</span>
+                      <strong>${profile.country.bestFor}</strong>
+                      <p>${profile.country.rhythm}. ${profile.country.mood}.</p>
+                    </article>
+                    <article class="package-note-card">
+                      <span>${iconText("bag", "Bagagelogik")}</span>
+                      <strong>${selectedOption.tier} just nu</strong>
+                      <p>${trip.baggage} ${trip.caveat}</p>
+                    </article>
                   </div>
                 </article>
-                <aside class="city-visuals">
-                  <a class="visual-card" href="${trip.visuals.city.source}" target="_blank" rel="noreferrer">
-                    <img src="${trip.visuals.city.image}" alt="${trip.city}" loading="lazy" />
-                    <div class="visual-label">
-                      <span>${trip.visuals.city.label}</span>
-                      <strong>${trip.visuals.city.title}</strong>
-                    </div>
-                  </a>
-                  <a class="visual-card" href="${trip.visuals.area.source}" target="_blank" rel="noreferrer">
-                    <img src="${trip.visuals.area.image}" alt="${trip.visuals.area.title}" loading="lazy" />
-                    <div class="visual-label">
-                      <span>${trip.visuals.area.label}</span>
-                      <strong>${trip.visuals.area.title}</strong>
-                    </div>
-                  </a>
-                </aside>
               </div>
 
-              ${renderMobileTierTabs(trip, selectedOption.tier)}
+              <div class="package-options-panel">
+                <div class="package-options-head">
+                  <div>
+                    <p class="compare-kicker">Bygg paketet</p>
+                    <h3>${trip.city} i tre nivåer</h3>
+                    <p>
+                      ${selectedOption.tier} just nu: ${selectedOption.hotel} ·
+                      ${formatSek(selectedOption.transportHotelSek)} för transport + hotell.
+                    </p>
+                  </div>
+                  ${renderMobileTierTabs(trip, selectedOption.tier)}
+                </div>
 
-              <div class="options-grid">
-                ${trip.options
-                  .map((option) => renderOptionCard(trip, option, selectedOption.tier))
-                  .join("")}
+                <div class="options-grid">
+                  ${trip.options
+                    .map((option) => renderOptionCard(trip, option, selectedOption.tier))
+                    .join("")}
+                </div>
               </div>
             </div>
           </section>
@@ -1688,95 +2121,121 @@ const renderTrips = () =>
     )
     .join("");
 
-const bindCompareControls = () => {
-  app.querySelectorAll("[data-compare-mode]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.mode = button.dataset.compareMode ?? state.mode;
-      state.sort = defaultSortByMode[state.mode];
-      render();
+const handleDocumentClick = (event) => {
+  if (!(event.target instanceof Element)) {
+    return;
+  }
+
+  const favoriteButton = event.target.closest("[data-favorite-id]");
+  if (favoriteButton) {
+    const favoriteId = favoriteButton.dataset.favoriteId;
+
+    if (state.favorites.includes(favoriteId)) {
+      state.favorites = state.favorites.filter((id) => id !== favoriteId);
+    } else {
+      state.favorites = [favoriteId, ...state.favorites];
+    }
+
+    state.favorites = normalizeFavorites(state.favorites);
+    saveFavorites();
+    render();
+    return;
+  }
+
+  const compareModeButton = event.target.closest("[data-compare-mode]");
+  if (compareModeButton) {
+    state.mode = compareModeButton.dataset.compareMode ?? state.mode;
+    state.sort = defaultSortByMode[state.mode];
+    render();
+    return;
+  }
+
+  const compareSortButton = event.target.closest("[data-compare-sort]");
+  if (compareSortButton) {
+    state.sort = compareSortButton.dataset.compareSort ?? state.sort;
+    render();
+    return;
+  }
+
+  const cityToggleButton = event.target.closest("[data-city-toggle]");
+  if (cityToggleButton) {
+    const city = cityToggleButton.dataset.cityToggle;
+    state.openCities = state.openCities.includes(city) ? [] : [city];
+    render();
+    return;
+  }
+
+  const mobileTierButton = event.target.closest("[data-mobile-tier]");
+  if (mobileTierButton) {
+    const city = mobileTierButton.dataset.mobileCity;
+    const tier = mobileTierButton.dataset.mobileTier;
+
+    if (!city || !tier) {
+      return;
+    }
+
+    state.mobileTierByCity[city] = tier;
+    setOpenCity(city);
+    render();
+    return;
+  }
+
+  const packageFilterButton = event.target.closest("[data-package-filter]");
+  if (packageFilterButton) {
+    state.packageFilter = packageFilterButton.dataset.packageFilter ?? state.packageFilter;
+    applyPackageDiscovery();
+    return;
+  }
+
+  const packageResetButton = event.target.closest("[data-package-reset]");
+  if (packageResetButton) {
+    state.packageQuery = "";
+    state.packageFilter = "all";
+    render();
+    navigateToHash("#paket", { focusSelector: "#package-search" });
+    return;
+  }
+
+  const navTarget = event.target.closest("[data-scroll-target], a[href^='#']");
+  if (navTarget) {
+    const hash = navTarget.dataset.scrollTarget ?? navTarget.getAttribute("href");
+
+    if (!hash || hash === "#") {
+      return;
+    }
+
+    event.preventDefault();
+    navigateToHash(hash, {
+      preserveHash: navTarget.dataset.keepHash === "true",
+      focusSelector: navTarget.dataset.focusSelector ?? "",
     });
-  });
+  }
+};
 
-  app.querySelectorAll("[data-compare-sort]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.sort = button.dataset.compareSort ?? state.sort;
-      render();
-    });
-  });
+const handleDocumentInput = (event) => {
+  if (!(event.target instanceof HTMLInputElement) || !event.target.matches("[data-package-query]")) {
+    return;
+  }
 
-  app.querySelectorAll("[data-favorite-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const favoriteId = button.dataset.favoriteId;
-
-      if (state.favorites.includes(favoriteId)) {
-        state.favorites = state.favorites.filter((id) => id !== favoriteId);
-      } else {
-        state.favorites = [favoriteId, ...state.favorites];
-      }
-
-      state.favorites = normalizeFavorites(state.favorites);
-      saveFavorites();
-      render();
-    });
-  });
-
-  app.querySelectorAll("[data-city-toggle]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const city = button.dataset.cityToggle;
-      state.openCities = state.openCities.includes(city) ? [] : [city];
-      render();
-    });
-  });
-
-  app.querySelectorAll("[data-mobile-tier]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const city = button.dataset.mobileCity;
-      const tier = button.dataset.mobileTier;
-
-      if (!city || !tier) {
-        return;
-      }
-
-      state.mobileTierByCity[city] = tier;
-      setOpenCity(city);
-      render();
-    });
-  });
-
-  app.querySelectorAll('a[href^="#"]').forEach((link) => {
-    link.addEventListener("click", (event) => {
-      const hash = link.getAttribute("href");
-
-      if (!hash || hash === "#") {
-        return;
-      }
-
-      const shouldRerender = applyHashToState(hash);
-
-      event.preventDefault();
-      if (shouldRerender) {
-        render();
-      }
-
-      if (window.history?.replaceState) {
-        window.history.replaceState(null, "", hash);
-      } else if (window.location) {
-        window.location.hash = hash;
-      }
-
-      scheduleHashScroll(hash);
-    });
-  });
+  state.packageQuery = event.target.value;
+  applyPackageDiscovery();
 };
 
 const render = () => {
-  app.innerHTML = `${renderDecisionSection()}${renderFavoritesSection()}${renderMethodSection()}${renderCompareSection()}${renderTrips()}`;
-  bindCompareControls();
+  app.innerHTML = `${renderDecisionSection()}${renderFavoritesSection()}${renderMethodSection()}${renderCompareSection()}${renderPackageExplorerSection()}${renderTrips()}${renderMobileDock()}`;
+  applyPackageDiscovery();
+  requestDockUpdate();
 };
 
 const initialHash = window.location?.hash ?? "";
 applyHashToState(initialHash);
 render();
+
+document.addEventListener("click", handleDocumentClick);
+document.addEventListener("input", handleDocumentInput);
+document.addEventListener("search", handleDocumentInput, true);
+window.addEventListener("scroll", requestDockUpdate, { passive: true });
+window.addEventListener("resize", requestDockUpdate);
 
 if (initialHash) {
   scheduleHashScroll(initialHash);
