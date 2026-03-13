@@ -1484,7 +1484,11 @@ body::before {
 
   .hero-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-actions a:first-child {
+    grid-column: 1 / -1;
   }
 
   .hero-actions a {
@@ -1619,13 +1623,10 @@ body::before {
   }
 
   .mobile-tier-tabs {
-    padding-top: 2px;
-  }
-
-  .mobile-tier-tabs[role="tablist"] {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
+    padding-top: 2px;
   }
 
   .city-visuals {
@@ -1655,6 +1656,24 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .compare-controls .toggle-row {
+    display: grid;
+  }
+
+  .compare-controls .toggle-row.mode-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compare-controls .toggle-row.sort-row {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-controls .toggle-btn {
+    min-width: 0;
+    width: 100%;
+    padding-inline: 14px;
+  }
+
   .options-grid {
     display: block;
   }
@@ -1674,5 +1693,23 @@ body::before {
   .price-grid,
   .links {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .page-shell {
+    width: calc(100% - 16px);
+  }
+
+  .hero h1 {
+    font-size: clamp(2.45rem, 14vw, 3.7rem);
+  }
+
+  .hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions a:first-child {
+    grid-column: auto;
   }
 }

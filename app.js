@@ -848,14 +848,6 @@ const loadFavorites = () => {
   }
 };
 
-const state = {
-  mode: "flight",
-  sort: defaultSortByMode.flight,
-  favorites: loadFavorites(),
-  openCities: [trips[0].city],
-  mobileTierByCity: { ...mobileDefaultTierByCity },
-};
-
 const decisionPicks = [
   {
     label: "Bäst totalval inom briefen",
@@ -892,6 +884,8 @@ const getTierOption = (trip, tier) => trip.options.find((option) => option.tier 
 
 const makeCityId = (trip) => slugify(trip.city);
 
+const makeCityContentId = (trip) => `${makeCityId(trip)}-content`;
+
 const makeOptionId = (trip, option) => `${slugify(trip.city)}--${slugify(option.tier)}`;
 
 const getLowestTransportOption = () =>
@@ -909,6 +903,23 @@ const findOptionById = (optionId) => {
   }
 
   return null;
+};
+
+const normalizeFavorites = (favoriteIds) =>
+  [...new Set(favoriteIds)].filter((favoriteId) => Boolean(findOptionById(favoriteId)));
+
+const getOptionLink = (option, labelPart) =>
+  option.links.find((link) => link.label.includes(labelPart)) ?? option.links[0];
+
+const getSelectedTierForTrip = (trip) =>
+  state.mobileTierByCity[trip.city] ?? trip.options[1]?.tier ?? trip.options[0].tier;
+
+const state = {
+  mode: "flight",
+  sort: defaultSortByMode.flight,
+  favorites: normalizeFavorites(loadFavorites()),
+  openCities: [trips[0].city],
+  mobileTierByCity: { ...mobileDefaultTierByCity },
 };
 
 const setOpenCity = (city) => {
@@ -978,7 +989,10 @@ const scheduleHashScroll = (hash) => {
 
 const saveFavorites = () => {
   try {
-    window.localStorage.setItem(favoritesStorageKey, JSON.stringify(state.favorites));
+    window.localStorage.setItem(
+      favoritesStorageKey,
+      JSON.stringify(normalizeFavorites(state.favorites))
+    );
   } catch {
     // Ignore storage errors and keep the UI usable.
   }
@@ -1248,6 +1262,8 @@ const renderFavoritesSection = () => {
                 .map(({ trip, option }) => {
                   const optionId = makeOptionId(trip, option);
                   const budgetState = getBudgetState(option.transportHotelSek);
+                  const hotelLink = getOptionLink(option, "Hotell");
+                  const mapsLink = getOptionLink(option, "Maps");
                   return `
                     <article class="favorite-card">
                       <div class="favorite-top">
@@ -1279,8 +1295,8 @@ const renderFavoritesSection = () => {
                       <p>${option.note}</p>
                       <div class="favorite-links">
                         <a href="#${optionId}">${icon("link")}<span>Till kortet</span></a>
-                        <a href="${option.links[1].url}" target="_blank" rel="noreferrer">${icon("hotel")}<span>Hotell</span></a>
-                        <a href="${option.links[2].url}" target="_blank" rel="noreferrer">${icon("map")}<span>Google Maps</span></a>
+                        <a href="${hotelLink.url}" target="_blank" rel="noreferrer">${icon("hotel")}<span>Hotell</span></a>
+                        <a href="${mapsLink.url}" target="_blank" rel="noreferrer">${icon("map")}<span>Google Maps</span></a>
                       </div>
                     </article>
                   `;
@@ -1392,7 +1408,7 @@ const renderCompareSection = () => {
         </div>
 
         <div class="compare-controls">
-          <div class="toggle-row">
+          <div class="toggle-row mode-row">
             ${Object.entries(compareModes)
               .map(
                 ([modeKey, mode]) => `
@@ -1400,6 +1416,7 @@ const renderCompareSection = () => {
                     class="toggle-btn ${state.mode === modeKey ? "active" : ""}"
                     type="button"
                     data-compare-mode="${modeKey}"
+                    aria-pressed="${state.mode === modeKey}"
                   >
                     ${mode.label}
                   </button>
@@ -1408,7 +1425,7 @@ const renderCompareSection = () => {
               .join("")}
           </div>
 
-          <div class="toggle-row">
+          <div class="toggle-row sort-row">
             ${modeConfig.sorts
               .map(
                 (sort) => `
@@ -1416,6 +1433,7 @@ const renderCompareSection = () => {
                     class="toggle-btn subtle ${state.sort === sort.key ? "active" : ""}"
                     type="button"
                     data-compare-sort="${sort.key}"
+                    aria-pressed="${state.sort === sort.key}"
                   >
                     ${sort.label}
                   </button>
@@ -1438,7 +1456,7 @@ const renderCompareSection = () => {
 };
 
 const renderMobileTierTabs = (trip, selectedTier) => `
-  <div class="mobile-tier-tabs" role="tablist" aria-label="${trip.city} prisnivåer">
+  <div class="mobile-tier-tabs" role="group" aria-label="${trip.city} prisnivåer">
     ${trip.options
       .map(
         (option) => `
@@ -1460,6 +1478,7 @@ const renderMobileTierTabs = (trip, selectedTier) => `
 const renderOptionCard = (trip, option, selectedTier) => {
   const optionId = makeOptionId(trip, option);
   const budgetState = getBudgetState(option.transportHotelSek);
+  const isFavorite = state.favorites.includes(optionId);
 
   return `
     <article class="option-card ${selectedTier === option.tier ? "is-mobile-active" : ""}" id="${optionId}">
@@ -1469,12 +1488,12 @@ const renderOptionCard = (trip, option, selectedTier) => {
           <span class="status ${budgetState.className}">${budgetState.label}</span>
         </div>
         <button
-          class="favorite-btn ${state.favorites.includes(optionId) ? "active" : ""}"
+          class="favorite-btn ${isFavorite ? "active" : ""}"
           type="button"
           data-favorite-id="${optionId}"
-          aria-pressed="${state.favorites.includes(optionId)}"
+          aria-pressed="${isFavorite}"
         >
-          ${state.favorites.includes(optionId) ? "Pinnad" : "Pinna"}
+          ${isFavorite ? "Pinnad" : "Pinna"}
         </button>
       </div>
       <div>
@@ -1536,11 +1555,12 @@ const renderTrips = () =>
   trips
     .map(
       (trip) => {
-        const selectedTier = state.mobileTierByCity[trip.city] ?? trip.options[1]?.tier ?? trip.options[0].tier;
+        const selectedTier = getSelectedTierForTrip(trip);
         const selectedOption = getTierOption(trip, selectedTier) ?? trip.options[0];
         const isOpen = state.openCities.includes(trip.city);
         const budgetState = getBudgetState(selectedOption.transportHotelSek);
         const profile = compareProfiles[trip.city];
+        const cityContentId = makeCityContentId(trip);
 
         return `
           <section class="city-section ${trip.themeClass}" id="${makeCityId(trip)}">
@@ -1550,6 +1570,7 @@ const renderTrips = () =>
                 type="button"
                 data-city-toggle="${trip.city}"
                 aria-expanded="${isOpen}"
+                aria-controls="${cityContentId}"
               >
                 <div class="city-mobile-copy">
                   <span>${trip.country}</span>
@@ -1563,7 +1584,7 @@ const renderTrips = () =>
               </button>
             </div>
 
-            <div class="city-content ${isOpen ? "is-open" : ""}">
+            <div class="city-content ${isOpen ? "is-open" : ""}" id="${cityContentId}">
               <div class="city-header">
                 <article class="city-copy">
                   <div class="city-kicker">
@@ -1614,7 +1635,7 @@ const renderTrips = () =>
 const bindCompareControls = () => {
   app.querySelectorAll("[data-compare-mode]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.mode = button.dataset.compareMode;
+      state.mode = button.dataset.compareMode ?? state.mode;
       state.sort = defaultSortByMode[state.mode];
       render();
     });
@@ -1622,7 +1643,7 @@ const bindCompareControls = () => {
 
   app.querySelectorAll("[data-compare-sort]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.sort = button.dataset.compareSort;
+      state.sort = button.dataset.compareSort ?? state.sort;
       render();
     });
   });
@@ -1637,6 +1658,7 @@ const bindCompareControls = () => {
         state.favorites = [favoriteId, ...state.favorites];
       }
 
+      state.favorites = normalizeFavorites(state.favorites);
       saveFavorites();
       render();
     });
@@ -1654,6 +1676,11 @@ const bindCompareControls = () => {
     button.addEventListener("click", () => {
       const city = button.dataset.mobileCity;
       const tier = button.dataset.mobileTier;
+
+      if (!city || !tier) {
+        return;
+      }
+
       state.mobileTierByCity[city] = tier;
       setOpenCity(city);
       render();
