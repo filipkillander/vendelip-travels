@@ -750,8 +750,6 @@ const iconSvg = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8.5 7.5h5a2.5 2.5 0 0 1 0 5h-3a2.5 2.5 0 0 0 0 5h5"/></svg>',
   map:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>',
-  swipe:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="M8 12h8"/></svg>',
   link:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5"/><path d="M14 11a5 5 0 0 0-7.07 0L5.5 12.41a5 5 0 0 0 7.07 7.07L14 19"/></svg>',
   heart:
@@ -914,6 +912,18 @@ const getOptionLink = (option, labelPart) =>
 const getSelectedTierForTrip = (trip) =>
   state.mobileTierByCity[trip.city] ?? trip.options[1]?.tier ?? trip.options[0].tier;
 
+const isCompactViewport = () => window.matchMedia?.("(max-width: 720px)")?.matches ?? false;
+
+const getDisclosureOpenAttr = (defaultOpen = false) =>
+  !isCompactViewport() || defaultOpen ? " open" : "";
+
+const renderDisclosureChip = (closedLabel, openLabel) => `
+  <span class="disclosure-chip">
+    <span class="disclosure-label disclosure-label-closed">${closedLabel}</span>
+    <span class="disclosure-label disclosure-label-open">${openLabel}</span>
+  </span>
+`;
+
 const state = {
   mode: "flight",
   sort: defaultSortByMode.flight,
@@ -960,7 +970,7 @@ const scrollToHashTarget = (hash) => {
       return false;
     }
 
-    const offset = window.matchMedia?.("(max-width: 720px)")?.matches ? 86 : 28;
+    const offset = isCompactViewport() ? 24 : 28;
     const targetTop = target.getBoundingClientRect().top + window.scrollY - offset;
 
     window.scrollTo({
@@ -1023,8 +1033,10 @@ const sortTripsForCompare = (sortKey) =>
 
 const renderCompareSummary = () => {
   const cheapestFlight = sortTripsForCompare("flightPrice")[0];
-  const cheapestMid = sortTripsForCompare("midPackage")[0];
-  const mostRomantic = sortTripsForCompare("romance")[0];
+  const closestBudget = getLowestTransportOption();
+  const featuredPick = decisionPicks.find((pick) => pick.featured) ?? decisionPicks[0];
+  const featuredTrip = trips.find((trip) => trip.city === featuredPick.city) ?? trips[0];
+  const featuredOption = getTierOption(featuredTrip, featuredPick.tier) ?? featuredTrip.options[0];
 
   return `
     <div class="compare-summary">
@@ -1034,14 +1046,14 @@ const renderCompareSummary = () => {
         <p>${formatSek(getTierOption(cheapestFlight, "Prisvärt").flightSek)} för två</p>
       </article>
       <article class="compare-summary-card">
-        <span>${iconText("wallet", "Billigast mitt i prick")}</span>
-        <strong>${cheapestMid.city}</strong>
-        <p>${formatSek(getTierOption(cheapestMid, "Mitt i prick").transportHotelSek)} transport + hotell</p>
+        <span>${iconText("wallet", "Närmast er 10k-ram")}</span>
+        <strong>${closestBudget.trip.city} ${closestBudget.option.tier.toLowerCase()}</strong>
+        <p>${formatSek(closestBudget.option.transportHotelSek)} för transport + hotell</p>
       </article>
       <article class="compare-summary-card">
-        <span>${iconText("heart", "Mest romantik")}</span>
-        <strong>${mostRomantic.city}</strong>
-        <p>${compareProfiles[mostRomantic.city].country.bestFor}</p>
+        <span>${iconText("heart", "Starkaste helhetskänslan")}</span>
+        <strong>${featuredTrip.city} ${featuredOption.tier.toLowerCase()}</strong>
+        <p>${formatSek(featuredOption.transportHotelSek)} med den tydligaste balansen mellan känsla och bokningslogik.</p>
       </article>
     </div>
   `;
@@ -1053,12 +1065,11 @@ const renderDecisionSection = () => {
       <div class="decision-head">
         <div>
           <p class="compare-kicker">Sista beslutsrundan</p>
-          <h2>Om ni bara ska titta på fyra saker först, börja här</h2>
+          <h2>Fyra kort att börja i om ni vill känna riktning direkt</h2>
           <p>
-            Toppen här premierar bara kort som faktiskt håller ihop när flyg, bagage,
-            bil, parkering och hotell räknas in. Därför lyfts Barcelona och Bologna
-            först, medan Paris och Rom ligger kvar längre ner som mer hjärtstyrda men
-            tydligt dyrare alternativ på just era datum.
+            Här ligger bara de upplägg som fortfarande känns starka när flyg, bagage,
+            bil, parkering och hotell räknas ihop. Tanken är att ni först ska kunna
+            öppna några få tydliga kandidater, och sedan dyka djupare i staden bakom.
           </p>
         </div>
         <div class="method-meta">
@@ -1067,51 +1078,65 @@ const renderDecisionSection = () => {
         </div>
       </div>
 
-      ${renderSwipeHint("Svep sidledes för fler slutval")}
       <div class="decision-grid">
         ${decisionPicks
-          .map((pick) => {
+          .map((pick, index) => {
             const trip = trips.find((candidate) => candidate.city === pick.city);
             const option = getTierOption(trip, pick.tier);
             const profile = compareProfiles[trip.city];
             const budgetState = getBudgetState(option.transportHotelSek);
             return `
-              <article class="decision-card ${pick.featured ? "featured" : ""}">
-                <div class="decision-topline">
-                  <span>${pick.label}</span>
-                  <p class="status ${budgetState.className}">${budgetState.label}</p>
+              <details class="decision-card ${pick.featured ? "featured" : ""}"${getDisclosureOpenAttr(index === 0 || pick.featured)}>
+                <summary class="decision-summary">
+                  <div class="decision-topline">
+                    <span>${pick.label}</span>
+                    <p class="status ${budgetState.className}">${budgetState.label}</p>
+                  </div>
+                  <div class="decision-summary-main">
+                    <div>
+                      <h3>${pick.city} · ${pick.tier}</h3>
+                      <p>${pick.reason}</p>
+                    </div>
+                    <div class="decision-price-callout">
+                      <span>${iconText("wallet", "Transport + hotell")}</span>
+                      <strong>${formatSek(option.transportHotelSek)}</strong>
+                    </div>
+                  </div>
+                  ${renderDisclosureChip("Öppna kortet", "Stäng kortet")}
+                </summary>
+                <div class="decision-body">
+                  <div class="decision-price-row">
+                    <div class="decision-meta">
+                      <strong>${formatSek(option.transportHotelSek)}</strong>
+                      <span>${iconText("wallet", "Transport + hotell")}</span>
+                    </div>
+                    <div class="decision-meta">
+                      <strong>${formatSek(option.tripTotalSek)}</strong>
+                      <span>${iconText("total", "Total resa inkl. 6 000 kr på plats")}</span>
+                    </div>
+                  </div>
+                  <div class="decision-metrics">
+                    <div class="metric-box">
+                      <span>${iconText("plane", "Flyg idag")}</span>
+                      <strong>${formatSek(option.flightSek)}</strong>
+                    </div>
+                    <div class="metric-box">
+                      <span>${iconText("bag", "Bagage")}</span>
+                      <strong>${formatSek(option.baggageSek)}</strong>
+                    </div>
+                    <div class="metric-box">
+                      <span>${iconText("map", "Flygläge")}</span>
+                      <strong>${profile.flight.easeScore}/5</strong>
+                    </div>
+                  </div>
+                  <p class="decision-story">
+                    <strong>Varför den här lyfts:</strong> ${profile.flight.directness}. ${profile.flight.timing}
+                  </p>
+                  <div class="decision-actions">
+                    <a href="#${makeOptionId(trip, option)}">Gå till hela kortet</a>
+                  </div>
                 </div>
-                <h3>${pick.city} · ${pick.tier}</h3>
-                <p>${pick.reason}</p>
-                <div class="decision-price-row">
-                  <div class="decision-meta">
-                    <strong>${formatSek(option.transportHotelSek)}</strong>
-                    <span>${iconText("wallet", "Transport + hotell")}</span>
-                  </div>
-                  <div class="decision-meta">
-                    <strong>${formatSek(option.tripTotalSek)}</strong>
-                    <span>${iconText("total", "Total resa inkl. 6 000 kr på plats")}</span>
-                  </div>
-                </div>
-                <div class="decision-metrics">
-                  <div class="metric-box">
-                    <span>${iconText("plane", "Flyg idag")}</span>
-                    <strong>${formatSek(option.flightSek)}</strong>
-                  </div>
-                  <div class="metric-box">
-                    <span>${iconText("bag", "Bagage")}</span>
-                    <strong>${formatSek(option.baggageSek)}</strong>
-                  </div>
-                  <div class="metric-box">
-                    <span>${iconText("map", "Flygläge")}</span>
-                    <strong>${profile.flight.easeScore}/5</strong>
-                  </div>
-                </div>
-                <p class="decision-story">
-                  <strong>Flygbedömning:</strong> ${profile.flight.directness}. ${profile.flight.timing}.
-                </p>
-                <a href="#${makeOptionId(trip, option)}">Till kortet</a>
-              </article>
+              </details>
             `;
           })
           .join("")}
@@ -1119,23 +1144,6 @@ const renderDecisionSection = () => {
     </section>
   `;
 };
-
-const renderMobileQuickNav = () => `
-  <nav class="mobile-quicknav" aria-label="Snabbnavigering för mobil">
-    <div class="mobile-quicknav-track">
-      <a href="#slutval">Slutval</a>
-      <a href="#favoriter">Favoriter</a>
-      <a href="#jamfor">Jämför</a>
-      ${trips
-        .map((trip) => `<a href="#${makeCityId(trip)}">${trip.city}</a>`)
-        .join("")}
-    </div>
-  </nav>
-`;
-
-const renderSwipeHint = (text) => `
-  <p class="swipe-hint">${icon("swipe")}<span>${text}</span></p>
-`;
 
 const renderMethodSection = () => {
   const closestBudget = getLowestTransportOption();
@@ -1145,11 +1153,11 @@ const renderMethodSection = () => {
       <div class="method-head">
         <div>
           <p class="compare-kicker">Så läser ni siffrorna</p>
-          <h2>Byggd för att vara lätt att känna i magen och lätt att lita på</h2>
+          <h2>Byggd för att hjälpa er välja, inte bara drömma</h2>
           <p>
-            Den här versionen prioriterar exakta hotellpriser framför snygga antaganden.
-            Flyg, bagage och bilkostnad ligger kvar som egna delar, så att ni direkt ser
-            vad som faktiskt driver totalsumman i varje stad.
+            Varje kort försöker hålla två saker samtidigt: verklig bokningslogik och
+            tydlig stadskänsla. Därför är kostnaderna separerade och därför får flygfriktion,
+            kvarterston och romantik vara egna lager i jämförelsen.
           </p>
         </div>
         <div class="method-meta">
@@ -1160,53 +1168,30 @@ const renderMethodSection = () => {
 
       <div class="method-grid">
         <article class="method-card">
-          <span>${iconText("hotel", "Hotell")}</span>
-          <strong>Exakt datumsida</strong>
-          <p>Alla hotellkort bygger nu på 28 april till 1 maj 2026, 2 vuxna och 1 rum.</p>
+          <span>${iconText("wallet", "Det som faktiskt kostar")}</span>
+          <strong>Budgeten börjar i verkliga delkostnader</strong>
+          <ul class="method-list">
+            <li>Hotell bygger på exakta datumsidor för 28 april till 1 maj 2026.</li>
+            <li>Flyg visas som rimlig snapshot samma dag, med bagage separat.</li>
+            <li>Bil och Arlanda-parkering ligger kvar i varje upplägg i stället för att gömmas.</li>
+          </ul>
         </article>
         <article class="method-card">
-          <span>${iconText("plane", "Flyg")}</span>
-          <strong>Ruttsnapshot samma dag</strong>
-          <p>Flygdelen är billigaste rimliga ruttsignal från dagens flygsidor, medan bagaget läggs separat.</p>
-        </article>
-        <article class="method-card">
-          <span>${iconText("wallet", "Totalen")}</span>
-          <strong>Transport + hotell först</strong>
-          <p>Kortens huvudsumma är hotell + flyg + bagage + bil/parkering. Sedan visas total resa med ert antagna spend på 6 000 kr.</p>
-        </article>
-        <article class="method-card">
-          <span>${iconText("link", "Brasklapp")}</span>
-          <strong>Lokala skatter kan tillkomma</strong>
-          <p>Flera hotellsidor visar stadsskatt eller moms utanför priset. Det står i varje kort så att ni ser var risken finns.</p>
+          <span>${iconText("heart", "Det som faktiskt ska kännas")}</span>
+          <strong>Sen väljer ni efter ton, flygfriktion och magkänsla</strong>
+          <ul class="method-list">
+            <li>Transport + hotell prioriteras före totalen så ni ser den riktiga bokningströskeln.</li>
+            <li>Jämförelsen väger in romantik, vego, kvartersvibe och hur smidig resdagen känns.</li>
+            <li>Skatter, moms och andra osäkerheter ligger kvar som brasklappar i respektive kort.</li>
+          </ul>
         </article>
       </div>
+
+      <p class="method-footnote">
+        Kort sagt: det här är gjort för att ni ska kunna säga “den här känns värd det”
+        eller “den här är fin men inte för de här datumen” utan att behöva gissa.
+      </p>
     </section>
-  `;
-};
-
-const renderGuideStrip = () => {
-  const smoothest = sortTripsForCompare("ease")[0];
-  const bestValue = getLowestTransportOption();
-  const bestBalanced = trips.find((trip) => trip.city === "Barcelona");
-
-  return `
-    <div class="guide-strip">
-      <article class="guide-card">
-        <span>För Filip & Vendela just nu</span>
-        <strong>Minst flygfriktion: ${smoothest.city}</strong>
-        <p>${compareProfiles[smoothest.city].flight.timing}.</p>
-      </article>
-      <article class="guide-card">
-        <span>Närmast er budgetram</span>
-        <strong>${bestValue.trip.city} ${bestValue.option.tier.toLowerCase()}</strong>
-        <p>${formatSek(bestValue.option.transportHotelSek)} för transport + hotell.</p>
-      </article>
-      <article class="guide-card">
-        <span>Bästa kombon av känsla och rimlighet</span>
-        <strong>${bestBalanced.city} mitt i prick</strong>
-        <p>${formatSek(getTierOption(bestBalanced, "Mitt i prick").transportHotelSek)} för transport + hotell, med betydligt smidigare flyglogik än Bologna.</p>
-      </article>
-    </div>
   `;
 };
 
@@ -1256,7 +1241,6 @@ const renderFavoritesSection = () => {
       ${
         favorites.length
           ? `
-            ${renderSwipeHint("Svep sidledes mellan era pinnade favoriter")}
             <div class="favorites-grid">
               ${favorites
                 .map(({ trip, option }) => {
@@ -1322,10 +1306,104 @@ const renderCompareCard = (trip, index) => {
   const budgetOption = getTierOption(trip, "Prisvärt");
   const midOption = getTierOption(trip, "Mitt i prick");
   const profile = compareProfiles[trip.city];
+  const lead =
+    state.mode === "flight"
+      ? state.sort === "flightPrice"
+        ? {
+            label: "Billigaste flyget just nu",
+            value: formatSek(budgetOption.flightSek),
+            note: `${profile.flight.directness}. ${profile.flight.timing}.`,
+          }
+        : state.sort === "ease"
+          ? {
+              label: "Flygsmidighet",
+              value: `${profile.flight.easeScore}/5`,
+              note: `${profile.flight.airportFeel}. ${profile.flight.timing}.`,
+            }
+          : {
+              label: "Mitt i prick",
+              value: formatSek(midOption.transportHotelSek),
+              note: `${profile.flight.directness}. ${profile.country.bestFor}.`,
+            }
+      : state.sort === "vego"
+        ? {
+            label: "Vegetariskt spelrum",
+            value: `${profile.country.vegoScore}/5`,
+            note: `${profile.country.bestFor}. ${profile.country.rhythm}.`,
+          }
+        : state.sort === "vibe"
+          ? {
+              label: "Kvarterskänsla",
+              value: `${profile.country.vibeScore}/5`,
+              note: `${profile.country.mood}. ${profile.country.bestFor}.`,
+            }
+          : {
+              label: "Romantik",
+              value: `${profile.country.romanceScore}/5`,
+              note: `${profile.country.bestFor}. ${profile.country.rhythm}.`,
+            };
 
   if (state.mode === "flight") {
     return `
-      <article class="compare-card">
+      <details class="compare-card"${getDisclosureOpenAttr(index === 0)}>
+        <summary class="compare-summary-head">
+          <div class="compare-card-head">
+            <div>
+              <span class="compare-rank">#${index + 1}</span>
+              <h3>${trip.city}</h3>
+              <p>${trip.country}</p>
+            </div>
+            <div class="compare-price">
+              <span>${lead.label}</span>
+              <strong>${lead.value}</strong>
+            </div>
+          </div>
+          <p class="compare-card-note">${lead.note}</p>
+          <div class="compare-highlight-row">
+            <div class="compare-highlight">
+              <span>${iconText("wallet", "Mitt i prick")}</span>
+              <strong>${formatSek(midOption.transportHotelSek)}</strong>
+            </div>
+            <div class="compare-highlight">
+              <span>${iconText("plane", "Prisvärt flyg")}</span>
+              <strong>${formatSek(budgetOption.flightSek)}</strong>
+            </div>
+          </div>
+          ${renderDisclosureChip("Öppna jämförelsen", "Stäng jämförelsen")}
+        </summary>
+        <div class="compare-card-body">
+          <div class="compare-metrics">
+            <div class="metric-box">
+              <span>${iconText("wallet", "Mitt i prick")}</span>
+              <strong>${formatSek(midOption.transportHotelSek)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${iconText("bag", "Bagage")}</span>
+              <strong>${formatSek(budgetOption.baggageSek)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${iconText("map", "Smidighet")}</span>
+              <strong>${profile.flight.easeScore}/5</strong>
+            </div>
+          </div>
+
+          <ul class="compare-points">
+            <li><span>Direkthet</span><strong>${profile.flight.directness}</strong></li>
+            <li><span>Tidskänsla</span><strong>${profile.flight.timing}</strong></li>
+            <li><span>Flygkänsla</span><strong>${profile.flight.airportFeel}</strong></li>
+          </ul>
+
+          <div class="compare-card-actions">
+            <a href="#${makeCityId(trip)}">Öppna ${trip.city}</a>
+          </div>
+        </div>
+      </details>
+    `;
+  }
+
+  return `
+    <details class="compare-card"${getDisclosureOpenAttr(index === 0)}>
+      <summary class="compare-summary-head">
         <div class="compare-card-head">
           <div>
             <span class="compare-rank">#${index + 1}</span>
@@ -1333,61 +1411,42 @@ const renderCompareCard = (trip, index) => {
             <p>${trip.country}</p>
           </div>
           <div class="compare-price">
-            <span>Flygsnapshot</span>
-            <strong>${formatSek(budgetOption.flightSek)}</strong>
+            <span>${lead.label}</span>
+            <strong>${lead.value}</strong>
           </div>
         </div>
-
-        <div class="compare-metrics">
-          <div class="metric-box">
+        <p class="compare-card-note">${lead.note}</p>
+        <div class="compare-highlight-row">
+          <div class="compare-highlight">
+            <span>${iconText("heart", "Landston")}</span>
+            <strong>${profile.country.mood}</strong>
+          </div>
+          <div class="compare-highlight">
             <span>${iconText("wallet", "Mitt i prick")}</span>
             <strong>${formatSek(midOption.transportHotelSek)}</strong>
           </div>
-          <div class="metric-box">
-            <span>${iconText("bag", "Bagage")}</span>
-            <strong>${formatSek(budgetOption.baggageSek)}</strong>
-          </div>
-          <div class="metric-box">
-            <span>${iconText("map", "Smidighet")}</span>
-            <strong>${profile.flight.easeScore}/5</strong>
-          </div>
+        </div>
+        ${renderDisclosureChip("Öppna jämförelsen", "Stäng jämförelsen")}
+      </summary>
+
+      <div class="compare-card-body">
+        <div class="score-row">
+          <span class="score-pill">Romantik ${profile.country.romanceScore}/5</span>
+          <span class="score-pill">Vego ${profile.country.vegoScore}/5</span>
+          <span class="score-pill">Vibe ${profile.country.vibeScore}/5</span>
         </div>
 
         <ul class="compare-points">
-          <li><span>Direkthet</span><strong>${profile.flight.directness}</strong></li>
-          <li><span>Tidskänsla</span><strong>${profile.flight.timing}</strong></li>
-          <li><span>Flygkänsla</span><strong>${profile.flight.airportFeel}</strong></li>
+          <li><span>Bäst för</span><strong>${profile.country.bestFor}</strong></li>
+          <li><span>Tempo</span><strong>${profile.country.rhythm}</strong></li>
+          <li><span>Mitt i prick</span><strong>${formatSek(midOption.transportHotelSek)}</strong></li>
         </ul>
-      </article>
-    `;
-  }
 
-  return `
-    <article class="compare-card">
-      <div class="compare-card-head">
-        <div>
-          <span class="compare-rank">#${index + 1}</span>
-          <h3>${trip.city}</h3>
-          <p>${trip.country}</p>
-        </div>
-        <div class="compare-price">
-          <span>Landston</span>
-          <strong>${profile.country.mood}</strong>
+        <div class="compare-card-actions">
+          <a href="#${makeCityId(trip)}">Öppna ${trip.city}</a>
         </div>
       </div>
-
-      <div class="score-row">
-        <span class="score-pill">Romantik ${profile.country.romanceScore}/5</span>
-        <span class="score-pill">Vego ${profile.country.vegoScore}/5</span>
-        <span class="score-pill">Vibe ${profile.country.vibeScore}/5</span>
-      </div>
-
-      <ul class="compare-points">
-        <li><span>Bäst för</span><strong>${profile.country.bestFor}</strong></li>
-        <li><span>Tempo</span><strong>${profile.country.rhythm}</strong></li>
-        <li><span>Mitt i prick</span><strong>${formatSek(midOption.transportHotelSek)}</strong></li>
-      </ul>
-    </article>
+    </details>
   `;
 };
 
@@ -1400,10 +1459,10 @@ const renderCompareSection = () => {
       <div class="compare-head">
         <div class="compare-copy">
           <p class="compare-kicker">Snabbjämförelse</p>
-          <h2>Snabbsortera shortlistan innan ni fördjupar er</h2>
+          <h2>Sortera först på logik, sedan på känsla</h2>
           <p>
-            Tanken här är enkel: ni ska kunna förstå vad som är smidigast att resa till,
-            vad som känns mest som ni och vilka städer som kräver att budgeten får ta en smäll.
+            Börja här när ni vill förstå vilken stad som är lättast att motivera med
+            plånboken, och vilken som ändå lockar mest när ni tittar bortom totalsumman.
           </p>
         </div>
 
@@ -1444,9 +1503,7 @@ const renderCompareSection = () => {
         </div>
       </div>
 
-      ${renderSwipeHint("Svep i korten för fler jämförelser")}
       ${renderCompareSummary()}
-      ${renderGuideStrip()}
 
       <div class="compare-grid">
         ${orderedTrips.map((trip, index) => renderCompareCard(trip, index)).join("")}
@@ -1617,7 +1674,6 @@ const renderTrips = () =>
                 </aside>
               </div>
 
-              ${renderSwipeHint("Svep i bilderna och växla mellan nivåerna")}
               ${renderMobileTierTabs(trip, selectedOption.tier)}
 
               <div class="options-grid">
@@ -1714,7 +1770,7 @@ const bindCompareControls = () => {
 };
 
 const render = () => {
-  app.innerHTML = `${renderMobileQuickNav()}${renderDecisionSection()}${renderFavoritesSection()}${renderMethodSection()}${renderCompareSection()}${renderTrips()}`;
+  app.innerHTML = `${renderDecisionSection()}${renderFavoritesSection()}${renderMethodSection()}${renderCompareSection()}${renderTrips()}`;
   bindCompareControls();
 };
 
